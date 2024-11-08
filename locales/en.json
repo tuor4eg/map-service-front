@@ -1,0 +1,16 @@
+{
+    "homePage": {
+        "welcome": "Welcome to Our Application",
+        "description": "This is the default home page. Navigate to other sections using the menu."
+    },
+    "loginPage": {
+        "title": "Login",
+        "email": "Email",
+        "password": "Password",
+        "submit": "Submit",
+        "rules": {
+            "required": "This field is required",
+            "invalidEmail": "Invalid email"
+        }
+    }
+}
