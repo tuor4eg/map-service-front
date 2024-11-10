@@ -1,7 +1,10 @@
 <template>
-    <v-container class="d-flex align-center justify-center" style="height: 100vh;">
+    <v-container
+        class="d-flex align-center justify-center"
+        style="height: 100vh"
+    >
         <v-card width="400">
-            <v-card-title>{{$t('loginPage.title')}}</v-card-title>
+            <v-card-title>{{ $t('loginPage.title') }}</v-card-title>
             <v-card-text>
                 <v-form ref="form" v-model="valid" lazy-validation>
                     <v-text-field
@@ -21,7 +24,7 @@
             </v-card-text>
             <v-card-actions>
                 <v-btn :disabled="!valid" color="primary" @click="login">
-                    {{$t('loginPage.submit')}}
+                    {{ $t('loginPage.submit') }}
                 </v-btn>
                 <div>
                     <v-btn @click="changeLocale('en')">English</v-btn>
@@ -35,10 +38,14 @@
 <script setup>
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useUserStore } from '../stores/user.store'
+import { navigateTo } from '#app'
+
+const apiService = useNuxtApp().$apiService
 
 const { locale, t } = useI18n()
 
-const changeLocale = (lang) => {
+const changeLocale = lang => {
     locale.value = lang
 }
 
@@ -47,17 +54,27 @@ const password = ref('')
 const valid = ref(false)
 
 const rules = {
-    required: (value) => !!value || t('loginPage.rules.required'),
-    email: (value) => {
-        const pattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/
+    required: value => !!value || t('loginPage.rules.required'),
+    email: value => {
+        const pattern = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/
         return pattern.test(value) || t('loginPage.rules.invalidEmail')
     }
 }
 
-const login = () => {
+const login = async () => {
     if (valid.value) {
-        console.log('Logging in with:', { email: email.value, password: password.value })
-        // Здесь можно добавить вызов API для авторизации
+        console.log('Logging in with:', {
+            email: email.value,
+            password: password.value
+        })
+
+        const res = await apiService.login({ email: email.value, password: password.value })
+
+        const store = useUserStore()
+
+        store.setUser(res.user)
+
+        navigateTo('/')
     }
 }
 </script>

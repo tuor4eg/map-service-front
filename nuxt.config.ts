@@ -3,12 +3,12 @@
 export default defineNuxtConfig({
     compatibilityDate: '2024-04-03',
     devtools: { enabled: true },
-    modules: ['vue-yandex-maps/nuxt', '@nuxtjs/i18n'],
+    modules: ['vue-yandex-maps/nuxt', '@nuxtjs/i18n', '@pinia/nuxt'],
     yandexMaps: {
-        apikey: '8da47fb9-b361-4e81-ae29-afeb3f928f1a'
+        apikey: process.env.YANDEX_API_KEY
     },
     i18n: {
-        vueI18n: "./i18n.config.ts",
+        vueI18n: './i18n.config.ts'
     },
     css: [
         'vuetify/lib/styles/main.sass',
@@ -16,5 +16,19 @@ export default defineNuxtConfig({
     ],
     build: {
         transpile: ['vuetify']
+    },
+    runtimeConfig: {
+        app: {
+            apiBaseURL: process.env.API_BASE_URL
+        }
+    },
+    vite: {
+        css: {
+            preprocessorOptions: {
+                sass: {
+                    api: 'modern'
+                }
+            }
+        }
     }
 })

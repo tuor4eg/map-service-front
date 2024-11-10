@@ -1,13 +1,12 @@
 <template>
-    <v-container class="d-flex align-center justify-center" style="height: 100vh;">
-        <div class="text-center">
-            <h1>{{ $t('homePage.welcome') }}</h1>
-            <p>{{ $t('homePage.description') }}</p>
-        </div>
-    </v-container>
+    <YaMap />
 </template>
 
 <script setup>
+import YaMap from '~/components/YaMap.vue';
+import { useUserStore } from '../stores/user.store'
+
+const store = useUserStore()
 
 </script>
 
