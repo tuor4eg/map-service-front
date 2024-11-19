@@ -11,6 +11,7 @@
         "rules": {
             "required": "This field is required",
             "invalidEmail": "Invalid email"
-        }
+        },
+        "loginError": "Invalid email or password"
     }
 }

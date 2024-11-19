@@ -7,7 +7,7 @@ interface UserState {
 
 export const useUserStore = defineStore('user', {
   state: (): UserState => ({
-    user: 'test'
+    user: null
   }),
   actions: {
     setUser(userData: IUser) {

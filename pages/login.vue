@@ -23,7 +23,7 @@
                 </v-form>
             </v-card-text>
             <v-card-actions>
-                <v-btn :disabled="!valid" color="primary" @click="login">
+                <v-btn :disabled="!valid" color="primary" @click="login" @keydown.enter="login">
                     {{ $t('loginPage.submit') }}
                 </v-btn>
                 <div>
@@ -32,6 +32,9 @@
                 </div>
             </v-card-actions>
         </v-card>
+        <v-snackbar v-model="toast.show" :timeout="3000" color="error">
+            {{ toast.message }}
+        </v-snackbar>
     </v-container>
 </template>
 
@@ -53,6 +56,11 @@ const email = ref('')
 const password = ref('')
 const valid = ref(false)
 
+const toast = ref({
+    show: false,
+    message: ''
+})
+
 const rules = {
     required: value => !!value || t('loginPage.rules.required'),
     email: value => {
@@ -62,19 +70,22 @@ const rules = {
 }
 
 const login = async () => {
-    if (valid.value) {
-        console.log('Logging in with:', {
-            email: email.value,
-            password: password.value
-        })
+    try {
+        if (valid.value) {
+            const res = await apiService.login({
+                email: email.value,
+                password: password.value
+            })
 
-        const res = await apiService.login({ email: email.value, password: password.value })
+            const store = useUserStore()
 
-        const store = useUserStore()
+            store.setUser(res.user)
 
-        store.setUser(res.user)
-
-        navigateTo('/')
+            navigateTo('/')
+        }
+    } catch (e) {
+        toast.value.show = true
+        toast.value.message = t('loginPage.loginError')
     }
 }
 </script>

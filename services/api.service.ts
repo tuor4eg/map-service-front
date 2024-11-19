@@ -1,6 +1,6 @@
 'use strict'
 
-import { API_ENDPOINTS } from "~/constants/api.constant"
+import { API_ENDPOINTS } from '~/constants/api.constant'
 
 enum EMethods {
     GET = 'GET',
@@ -18,27 +18,32 @@ type TFetchRequest = {
 
 class ApiService {
     private baseUrl: string
-    private $fetch: typeof $fetch
+    private fetchData: any
     private headers: Record<string, string>
-    private token?: string | null
+    private refreshing: boolean
+    private noRefreshEndpoints: string[]
 
-    constructor(baseUrl: string, $fetch: any) {
-        this.token = null
+    constructor(baseUrl: string, fetchData: any) {
         this.baseUrl = baseUrl
-        this.$fetch = $fetch
+        this.fetchData = fetchData
         this.headers = {
             'Content-Type': 'application/json'
         }
+        this.refreshing = false
+        this.noRefreshEndpoints = [API_ENDPOINTS.LOGIN, API_ENDPOINTS.LOGOUT]
     }
 
-    setToken(token: string) {
-        this.token = token
+
+    enableRefreshMode(): void {
+        this.refreshing = true
+    }
+
+    disableRefreshMode(): void {
+        this.refreshing = false
     }
 
     getHeaders(options: any): Record<string, string> {
         const headers = Object.assign({}, this.headers, options)
-
-        if (this.token) headers['Authorization'] = `Bearer ${this.token}`
 
         return headers
     }
@@ -52,7 +57,23 @@ class ApiService {
 
         if (body) request.body = body
 
-        return this.$fetch(`${this.baseUrl}${endpoint}`, request)
+        try {
+            return await this.fetchData(`${this.baseUrl}${endpoint}`, request, this.refreshing)
+        } catch (err) {
+            if (!this.noRefreshEndpoints.includes(endpoint) && !this.refreshing) {
+                this.enableRefreshMode()
+
+                console.log('token failed trying to refresh')
+
+                await this.refresh()
+
+                this.disableRefreshMode()
+
+                return await this.fetchData(`${this.baseUrl}${endpoint}`, request, this.refreshing)
+            } else {
+                throw err
+            }
+        }
     }
 
     async get(endpoint: string, options?: any) {
@@ -63,11 +84,15 @@ class ApiService {
         return await this.fetch(endpoint, EMethods.POST, body, options)
     }
 
-    async login(data: any){
+    async login(data: any) {
         return await this.post(API_ENDPOINTS.LOGIN, data)
     }
 
-    async cameraList(){
+    async refresh() {
+        return await this.post(API_ENDPOINTS.REFRESH, {})
+    }
+
+    async cameraList() {
         return await this.get(API_ENDPOINTS.CAMERA_LIST)
     }
 }

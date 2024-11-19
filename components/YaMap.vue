@@ -12,26 +12,37 @@
             <yandex-map-default-scheme-layer />
             <yandex-map-default-features-layer />
             <template v-for="camera in camerasList">
-                <yandex-map-default-marker :settings="camera" />
+                <yandex-map-default-marker
+                    :settings="{ ...camera, popup: { position: 'top' } }"
+                >
+                    <template #popup="{ close }">
+                        <camera-card :close="close" />
+                    </template>
+                </yandex-map-default-marker>
             </template>
+            <yandex-map-listener 
+            :settings="{
+                onClick: clickMap
+            }"/>
         </yandex-map>
     </div>
 </template>
 
 <script setup lang="ts">
 import { shallowRef, ref } from 'vue'
-import type { YMap, LngLat } from '@yandex/ymaps3-types'
+import type { YMap, LngLat, DomEvent } from '@yandex/ymaps3-types'
 import {
     YandexMap,
     YandexMapDefaultSchemeLayer,
     YandexMapDefaultMarker,
-    YandexMapDefaultFeaturesLayer
+    YandexMapDefaultFeaturesLayer,
+    YandexMapListener
 } from 'vue-yandex-maps'
 
 const map = shallowRef<null | YMap>(null)
 
 const centerCoords = ref([37.573856, 55.751574])
-const camerasList = ref([])
+const camerasList = ref<Array<any>>([])
 
 const apiService: any = useNuxtApp().$apiService
 
@@ -60,6 +71,11 @@ const getCamerasList = async () => {
 
     camerasList.value = cameras
 }
+
+const clickMap = (event: any) => {
+    console.log(event)
+    if (!event) console.log('Clicked on the map')
+}
 </script>
 
 <style scoped>
@@ -74,5 +90,15 @@ const getCamerasList = async () => {
 yandex-map {
     width: 100%;
     height: 100%;
+}
+
+.marker-popup {
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px;
+    color: black;
+    cursor: pointer;
+    font-size: 14px;
+    white-space: nowrap;
 }
 </style>

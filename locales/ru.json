@@ -11,6 +11,7 @@
         "rules": {
             "required": "Это обязательное поле",
             "invalidEmail": "Неверный email"
-        }
+        },
+        "loginError": "Неверный логи или пароль"
     }
 }
