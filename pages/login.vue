@@ -4,7 +4,19 @@
         style="height: 100vh"
     >
         <v-card width="400">
-            <v-card-title>{{ $t('loginPage.title') }}</v-card-title>
+            <v-card-title>
+                <v-container>
+                    <v-row>
+                        {{ $t('loginPage.title') }}
+
+                        <v-spacer></v-spacer>
+
+                        <v-btn variant="text">
+                            {{ $t('loginPage.register') }}
+                        </v-btn>
+                    </v-row>
+                </v-container>
+            </v-card-title>
             <v-card-text>
                 <v-form ref="form" v-model="valid" lazy-validation>
                     <v-text-field
@@ -23,7 +35,12 @@
                 </v-form>
             </v-card-text>
             <v-card-actions>
-                <v-btn :disabled="!valid" color="primary" @click="login" @keydown.enter="login">
+                <v-btn
+                    :disabled="!valid"
+                    color="primary"
+                    @click="login"
+                    @keydown.enter="login"
+                >
                     {{ $t('loginPage.submit') }}
                 </v-btn>
                 <div>

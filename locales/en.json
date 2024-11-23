@@ -8,6 +8,7 @@
         "email": "Email",
         "password": "Password",
         "submit": "Submit",
+        "register": "Register",
         "rules": {
             "required": "This field is required",
             "invalidEmail": "Invalid email"

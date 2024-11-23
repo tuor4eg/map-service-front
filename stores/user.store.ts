@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import type { IUser } from '../types/types'
 
 interface UserState {
-  user: IUser | null | string
+  user: IUser | null
 }
 
 export const useUserStore = defineStore('user', {

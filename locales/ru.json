@@ -8,10 +8,14 @@
         "email": "Электронная почта",
         "password": "Пароль",
         "submit": "Отправить",
+        "register": "Регистрация",
         "rules": {
             "required": "Это обязательное поле",
             "invalidEmail": "Неверный email"
         },
-        "loginError": "Неверный логи или пароль"
+        "loginError": "Неверный логин или пароль"
+    },
+    "userMenu": {
+        "logout": "Выйти"
     }
 }

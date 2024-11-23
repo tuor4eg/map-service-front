@@ -1,17 +1,23 @@
 <template>
     <YaMap />
+    <UserMenu />
+    <LoadingScreen />
 </template>
 
 <script setup>
-import YaMap from '~/components/YaMap.vue';
+import YaMap from '~/components/YaMap.vue'
+import UserMenu from '~/components/UserMenu.vue'
+import LoadingScreen from '~/components/LoadingScreen.vue'
 import { useUserStore } from '../stores/user.store'
 
-const store = useUserStore()
+const userStore = useUserStore()
+const apiService = useNuxtApp().$apiService
 
+onMounted(async () => {
+    const res = await apiService.userInfo()
+
+    userStore.setUser(res.user)
+})
 </script>
 
-<style scoped>
-.text-center {
-    text-align: center;
-}
-</style>
+<style scoped></style>

@@ -1,6 +1,14 @@
 'use strict'
 
+import { v4 } from 'uuid'
+import { Mutex, type MutexInterface } from 'async-mutex'
+
 import { API_ENDPOINTS } from '~/constants/api.constant'
+
+const ACCESS_TOKEN = 'accessToken'
+const REFRESH_TOKEN ='refreshToken'
+const DEVICE_UUID = 'deviceUUID'
+const COOKIE_MAX_AGE = 60* 60 *24 *7 // 7 days
 
 enum EMethods {
     GET = 'GET',
@@ -18,34 +26,68 @@ type TFetchRequest = {
 
 class ApiService {
     private baseUrl: string
-    private fetchData: any
     private headers: Record<string, string>
+    private noAuthEndpoints: string[]
+    private mutex: MutexInterface
     private refreshing: boolean
-    private noRefreshEndpoints: string[]
 
-    constructor(baseUrl: string, fetchData: any) {
+    constructor(baseUrl: string) {
         this.baseUrl = baseUrl
-        this.fetchData = fetchData
         this.headers = {
             'Content-Type': 'application/json'
         }
+        this.noAuthEndpoints = [API_ENDPOINTS.LOGIN, API_ENDPOINTS.LOGOUT]
+        this.mutex = new Mutex()
         this.refreshing = false
-        this.noRefreshEndpoints = [API_ENDPOINTS.LOGIN, API_ENDPOINTS.LOGOUT]
     }
 
+    hasNoAuth(endpoint: string): boolean {
+        return this.noAuthEndpoints.includes(endpoint)
+    }
 
-    enableRefreshMode(): void {
+    isRefreshEndpoint(endpoint: string): boolean {
+        return endpoint === API_ENDPOINTS.REFRESH
+    }
+
+    enableRefreshMode(){
         this.refreshing = true
     }
 
-    disableRefreshMode(): void {
+    disableRefreshMode(){
         this.refreshing = false
+    }
+
+    isAuthError(error: any): boolean {
+        return error.statusCode === 401
     }
 
     getHeaders(options: any): Record<string, string> {
         const headers = Object.assign({}, this.headers, options)
 
+        const authToken = useCookie(ACCESS_TOKEN, { sameSite: true })
+        const refreshToken = useCookie(REFRESH_TOKEN, { sameSite: true })
+
+        const token = this.refreshing
+            ? refreshToken.value
+            : authToken.value
+
+        headers['Authorization'] = `Bearer ${token}`
+
         return headers
+    }
+
+    generateDeviceUUID(): string {
+        return v4()
+    }
+
+    ensureDeviceUUID() {
+        const deviceUUID = useCookie(DEVICE_UUID, { sameSite: true, maxAge: COOKIE_MAX_AGE })
+
+        if (!deviceUUID.value) {
+            const deviceUUIDValue = this.generateDeviceUUID()
+
+            deviceUUID.value = deviceUUIDValue
+        }
     }
 
     async fetch(endpoint: string, method: EMethods, body?: any, options = {}) {
@@ -55,25 +97,37 @@ class ApiService {
             credentials: 'include'
         }
 
+        const url = `${this.baseUrl}${endpoint}`
+
+        this.ensureDeviceUUID()
+
         if (body) request.body = body
 
-        try {
-            return await this.fetchData(`${this.baseUrl}${endpoint}`, request, this.refreshing)
-        } catch (err) {
-            if (!this.noRefreshEndpoints.includes(endpoint) && !this.refreshing) {
-                this.enableRefreshMode()
+        if (this.refreshing) return await $fetch(url, request)
 
-                console.log('token failed trying to refresh')
+        return this.mutex.runExclusive(async () => {
+            try {
+                return await $fetch(url, request)
+            } catch (err) {
+                if (this.isAuthError(err) && !this.hasNoAuth(endpoint)) {
+                    try {
+                        this.enableRefreshMode()
 
-                await this.refresh()
+                        await this.refresh()
 
-                this.disableRefreshMode()
+                        this.disableRefreshMode()
 
-                return await this.fetchData(`${this.baseUrl}${endpoint}`, request, this.refreshing)
-            } else {
-                throw err
+                        request.headers = this.getHeaders(options)
+
+                        return await $fetch(url, request)
+                    } catch (err) {
+                        navigateTo('/login')
+                    }
+                } else {
+                    throw err
+                }
             }
-        }
+        })
     }
 
     async get(endpoint: string, options?: any) {
@@ -88,8 +142,24 @@ class ApiService {
         return await this.post(API_ENDPOINTS.LOGIN, data)
     }
 
+    async logout(){
+        const res = await this.post(API_ENDPOINTS.LOGOUT, {})
+
+        const authToken = useCookie(ACCESS_TOKEN, { sameSite: true })
+        const refreshToken = useCookie(REFRESH_TOKEN, { sameSite: true })
+
+        authToken.value = null
+        refreshToken.value = null
+
+        navigateTo('/login')
+    }
+
     async refresh() {
         return await this.post(API_ENDPOINTS.REFRESH, {})
+    }
+
+    async userInfo() {
+        return await this.get(API_ENDPOINTS.INFO)
     }
 
     async cameraList() {

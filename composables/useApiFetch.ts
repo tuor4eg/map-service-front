@@ -14,7 +14,7 @@ export async function useApiFetch(url: string, options: any = {}, refresh = fals
 
         const response = await $fetch(url, {
             ...options,
-            onRequest({ options }: { options: any }) {
+            onRequest({ options }: { options: any }) {  
                 console.log('Request made:', options)
             },
             onResponse({ response }: { response: any }) {
