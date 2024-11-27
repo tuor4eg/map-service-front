@@ -13,6 +13,9 @@ import { useUserStore } from '../stores/user.store'
 const userStore = useUserStore()
 const apiService = useNuxtApp().$apiService
 
+const config = useRuntimeConfig()
+console.log('API Base URL:', config.public.apiBaseURL)
+
 onMounted(async () => {
     const res = await apiService.userInfo()
 
