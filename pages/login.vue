@@ -101,6 +101,7 @@ const login = async () => {
             navigateTo('/')
         }
     } catch (e) {
+        console.log(e)
         toast.value.show = true
         toast.value.message = t('loginPage.loginError')
     }

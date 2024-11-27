@@ -7,7 +7,8 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "start": "nuxt start"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
@@ -17,14 +18,15 @@
     "async-mutex": "^0.5.0",
     "nuxt": "^3.14.159",
     "pinia": "^2.2.6",
-    "sass": "^1.80.6",
     "uuid": "^11.0.3",
     "vue": "latest",
     "vue-router": "latest",
     "vue-yandex-maps": "^2.1.4"
   },
   "devDependencies": {
+    "sass": "^1.81.0",
     "sass-embedded": "^1.80.6",
+    "sass-loader": "^16.0.3",
     "vite-plugin-vuetify": "^2.0.4",
     "vuetify": "^3.7.4"
   }

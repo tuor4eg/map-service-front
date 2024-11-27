@@ -1,0 +1,19 @@
+version: '3.8'
+
+networks:
+  default:
+    name: lams-network
+
+services:
+  nuxt:
+    build:
+      context: .
+    env_file:
+      - .env
+    ports:
+      - "${PORT}:${PORT}"
+    container_name: lams-frontend
+    image: ${DOCKER_USERNAME}/lams-frontend:latest
+    restart: always
+    networks:
+      - default
