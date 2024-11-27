@@ -63,6 +63,9 @@ import { navigateTo } from '#app'
 
 const apiService = useNuxtApp().$apiService
 
+const config = useRuntimeConfig()
+console.log('API Base URL:', config.public.apiBaseURL)
+
 const { locale, t } = useI18n()
 
 const changeLocale = lang => {
