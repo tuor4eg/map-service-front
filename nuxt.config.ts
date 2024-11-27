@@ -5,7 +5,7 @@ export default defineNuxtConfig({
     devtools: { enabled: true },
     modules: ['vue-yandex-maps/nuxt', '@nuxtjs/i18n', '@pinia/nuxt'],
     yandexMaps: {
-        apikey: process.env.YANDEX_API_KEY
+        apikey: ''
     },
     i18n: {
         vueI18n: './i18n.config.ts'
@@ -18,8 +18,11 @@ export default defineNuxtConfig({
         transpile: ['vuetify']
     },
     runtimeConfig: {
-        app: {
-            apiBaseURL: process.env.API_BASE_URL
+        public: {
+            apiBaseURL: process.env.API_BASE_URL,
+            yandexMaps: {
+                apikey: ''
+              }
         }
     },
     vite: {
