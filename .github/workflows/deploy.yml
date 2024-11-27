@@ -20,7 +20,7 @@ jobs:
         run: docker build -t ${{ secrets.DOCKER_USERNAME }}/lams-frontend:latest .
 
       - name: Push Docker image to Docker Hub
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/lams-frontent:latest
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/lams-frontend:latest
 
       - name: Copy docker-compose.yml to VPS
         uses: appleboy/scp-action@v0.1.0
