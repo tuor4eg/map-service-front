@@ -64,7 +64,13 @@ import { navigateTo } from '#app'
 const apiService = useNuxtApp().$apiService
 
 const config = useRuntimeConfig()
-console.log('API Base URL:', config.public.apiBaseURL)
+if (process.server) {
+  console.log('Server-side log:', config.public.apiBaseURL || 'Not defined')
+}
+
+if (process.client) {
+  console.log('Client-side log:', config.public.apiBaseURL || 'Not defined')
+}
 
 const { locale, t } = useI18n()
 
