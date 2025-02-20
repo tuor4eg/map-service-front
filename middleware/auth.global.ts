@@ -1,9 +1,10 @@
 import { useCookie } from 'nuxt/app'
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
-    const token = useCookie('accessToken', { sameSite: true })
+    const accessToken = useCookie('accessToken', { sameSite: true })
+    const refreshToken = useCookie('refreshToken', { sameSite: true })
     
-    if (!token.value && to.path !== '/login') {
+    if ((!accessToken.value || !refreshToken.value) && to.path !== '/login') {
         return navigateTo('/login')
     }
 })

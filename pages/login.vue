@@ -18,7 +18,7 @@
                 </v-container>
             </v-card-title>
             <v-card-text>
-                <v-form ref="form" v-model="valid" lazy-validation>
+                <v-form ref="form" v-model="valid" lazy-validation @submit.prevent="login">
                     <v-text-field
                         :label="$t('loginPage.email')"
                         v-model="email"
@@ -31,6 +31,7 @@
                         :rules="[rules.required]"
                         type="password"
                         required
+                        @keyup.enter="login"
                     ></v-text-field>
                 </v-form>
             </v-card-text>
@@ -39,14 +40,9 @@
                     :disabled="!valid"
                     color="primary"
                     @click="login"
-                    @keydown.enter="login"
                 >
                     {{ $t('loginPage.submit') }}
                 </v-btn>
-                <div>
-                    <v-btn @click="changeLocale('en')">English</v-btn>
-                    <v-btn @click="changeLocale('ru')">Русский</v-btn>
-                </div>
             </v-card-actions>
         </v-card>
         <v-snackbar v-model="toast.show" :timeout="3000" color="error">
@@ -56,21 +52,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useUserStore } from '../stores/user.store'
 import { navigateTo } from '#app'
 
 const apiService = useNuxtApp().$apiService
-
-const config = useRuntimeConfig()
-if (process.server) {
-  console.log('Server-side log:', config.public.apiBaseURL || 'Not defined')
-}
-
-if (process.client) {
-  console.log('Client-side log:', config.public.apiBaseURL || 'Not defined')
-}
 
 const { locale, t } = useI18n()
 
@@ -110,7 +95,6 @@ const login = async () => {
             navigateTo('/')
         }
     } catch (e) {
-        console.log(e)
         toast.value.show = true
         toast.value.message = t('loginPage.loginError')
     }

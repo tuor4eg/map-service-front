@@ -14,5 +14,36 @@
             "invalidEmail": "Invalid email"
         },
         "loginError": "Invalid email or password"
+    },
+    "common": {
+        "copyToClipboard": "Copy",
+        "copied": "Copied!"
+    },
+    "cameraInfo": {
+        "close": "Close",
+        "connect": "Connect"
+    },
+    "userMenu": {
+        "camerasList": {
+            "title": "Cameras List",
+            "openViewer": "Open on map",
+            "addFavorite": "Add to favorites"
+        },
+        "starred": "Starred",
+        "settings": "Settings",
+        "logout": "Logout",
+        "userSettings": {
+            "title": "Settings",
+            "language": {
+                "title": "Language",
+                "options": {
+                    "ru": "Русский",
+                    "en": "English"
+                }
+            },
+            "saveButton": "Save Settings",
+            "saveSuccess": "Settings saved successfully",
+            "saveError": "Error saving settings"
+        }
     }
 }

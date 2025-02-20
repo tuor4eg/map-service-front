@@ -2,8 +2,12 @@
 
 import { v4 } from 'uuid'
 import { Mutex, type MutexInterface } from 'async-mutex'
+import { useI18n } from '#imports'
+import type { Ref } from 'vue'
 
 import { API_ENDPOINTS } from '~/constants/api.constant'
+import type { TUser } from '~/types/types'
+import { useUserStore } from '~/stores/user.store'
 
 const ACCESS_TOKEN = 'accessToken'
 const REFRESH_TOKEN ='refreshToken'
@@ -30,15 +34,17 @@ class ApiService {
     private noAuthEndpoints: string[]
     private mutex: MutexInterface
     private refreshing: boolean
+    private userStore: ReturnType<typeof useUserStore>
 
     constructor(baseUrl: string) {
         this.baseUrl = baseUrl
         this.headers = {
             'Content-Type': 'application/json'
         }
-        this.noAuthEndpoints = [API_ENDPOINTS.LOGIN, API_ENDPOINTS.LOGOUT]
+        this.noAuthEndpoints = [API_ENDPOINTS.USER_LOGIN, API_ENDPOINTS.USER_LOGOUT]
         this.mutex = new Mutex()
         this.refreshing = false
+        this.userStore = useUserStore()
     }
 
     hasNoAuth(endpoint: string): boolean {
@@ -46,14 +52,14 @@ class ApiService {
     }
 
     isRefreshEndpoint(endpoint: string): boolean {
-        return endpoint === API_ENDPOINTS.REFRESH
+        return endpoint === API_ENDPOINTS.USER_REFRESH
     }
 
-    enableRefreshMode(){
+    enableRefreshMode(): void {
         this.refreshing = true
     }
 
-    disableRefreshMode(){
+    disableRefreshMode(): void {
         this.refreshing = false
     }
 
@@ -80,7 +86,7 @@ class ApiService {
         return v4()
     }
 
-    ensureDeviceUUID() {
+    ensureDeviceUUID(): void {
         const deviceUUID = useCookie(DEVICE_UUID, { sameSite: true, maxAge: COOKIE_MAX_AGE })
 
         if (!deviceUUID.value) {
@@ -90,7 +96,7 @@ class ApiService {
         }
     }
 
-    async fetch(endpoint: string, method: EMethods, body?: any, options = {}) {
+    async fetch(endpoint: string, method: EMethods, body?: any, options = {}): Promise<any> {
         const request: TFetchRequest = {
             method,
             headers: this.getHeaders(options),
@@ -130,40 +136,64 @@ class ApiService {
         })
     }
 
-    async get(endpoint: string, options?: any) {
+    async get(endpoint: string, options?: any): Promise<any> {
         return await this.fetch(endpoint, EMethods.GET, options)
     }
 
-    async post(endpoint: string, body: any, options?: any) {
+    async post(endpoint: string, body: any, options?: any): Promise<any> {
         return await this.fetch(endpoint, EMethods.POST, body, options)
     }
 
-    async login(data: any) {
-        return await this.post(API_ENDPOINTS.LOGIN, data)
+    async login(data: any): Promise<any> {
+        return await this.post(API_ENDPOINTS.USER_LOGIN, data)
     }
 
-    async logout(){
-        const res = await this.post(API_ENDPOINTS.LOGOUT, {})
+    async logout(): Promise<void> {
+        await this.post(API_ENDPOINTS.USER_LOGOUT, {})
 
         const authToken = useCookie(ACCESS_TOKEN, { sameSite: true })
         const refreshToken = useCookie(REFRESH_TOKEN, { sameSite: true })
 
         authToken.value = null
         refreshToken.value = null
+        this.userStore.clearUser()
 
         navigateTo('/login')
     }
 
-    async refresh() {
-        return await this.post(API_ENDPOINTS.REFRESH, {})
+    async refresh(): Promise<any> {
+        return await this.post(API_ENDPOINTS.USER_REFRESH, {})
     }
 
-    async userInfo() {
-        return await this.get(API_ENDPOINTS.INFO)
+    async userInfo(locale?: Ref<string>): Promise<TUser> {
+        const res = await this.get(API_ENDPOINTS.USER_INFO)
+        this.userStore.setUser(res.user)
+        
+        if (res.user.settings?.language && locale) {
+            locale.value = res.user.settings.language
+        }
+        
+        return res.user
     }
 
-    async cameraList() {
+    async cameraList(): Promise<any> {
         return await this.get(API_ENDPOINTS.CAMERA_LIST)
+    }
+
+    async cameraInfo(id: string): Promise<any> {
+        return await this.get(`${API_ENDPOINTS.CAMERA_INFO}${id}`)
+    }
+
+    async сamerasByUser(userId: string): Promise<any> {
+        return await this.get(`${API_ENDPOINTS.CAMERA_LIST_BY_USER}${userId}`)
+    }
+
+    async updateUser(data: TUser): Promise<any> {
+            return await this.post(API_ENDPOINTS.USER_UPDATE, data)
+    }
+
+    async getStarredCameras(userId: string): Promise<any> {
+        return await this.get(`${API_ENDPOINTS.STARRED_CAMERAS}${userId }`)
     }
 }
 

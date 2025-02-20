@@ -15,7 +15,38 @@
         },
         "loginError": "Неверный логин или пароль"
     },
+    "common": {
+        "copyToClipboard": "Скопировать",
+        "copied": "Скопировано!",
+        "save": "Сохранить"
+    },
+    "cameraInfo": {
+        "close": "Закрыть",
+        "copyCoordinates": "Скопировать координаты",
+        "coordinatesCopied": "Скопировано!",
+        "connect": "Подключиться"
+    },
     "userMenu": {
-        "logout": "Выйти"
+        "camerasList": {
+            "title": "Список камер",
+            "openViewer": "Открыть на карте",
+            "addFavorite": "Добавить в избранное"
+        },
+        "starred": "Избранное",
+        "settings": "Настройки",
+        "logout": "Выйти",
+        "userSettings": {
+            "title": "Настройки",
+            "language": {
+                "title": "Язык",
+                "options": {
+                    "ru": "Русский",
+                    "en": "English"
+                }
+            },
+            "saveButton": "Сохранить настройки",
+            "saveSuccess": "Настройки успешно сохранены",
+            "saveError": "Ошибка при сохранении настроек"
+        }
     }
 }

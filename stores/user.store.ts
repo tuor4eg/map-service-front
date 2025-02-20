@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
-import type { IUser } from '../types/types'
+import type { TUser } from '../types/types'
 
 interface UserState {
-  user: IUser | null
+    user: TUser | null
 }
 
 export const useUserStore = defineStore('user', {
@@ -10,7 +10,7 @@ export const useUserStore = defineStore('user', {
     user: null
   }),
   actions: {
-    setUser(userData: IUser) {
+    setUser(userData: TUser) {
       this.user = userData
     },
     clearUser() {
