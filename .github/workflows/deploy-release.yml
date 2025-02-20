@@ -1,9 +1,9 @@
-name: Deploy Main to VPS
+name: Deploy Release to VPS
 
 on:
   push:
     branches:
-      - main
+      - release
 
 jobs:
   deploy:
@@ -17,29 +17,29 @@ jobs:
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/lams-frontend:latest .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/lams-frontend:release .
 
       - name: Push Docker image to Docker Hub
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/lams-frontend:latest
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/lams-frontend:release
 
       - name: Copy docker-compose.yml to VPS
         uses: appleboy/scp-action@v0.1.0
         with:
-          host: ${{ secrets.VPS_HOST_PROD }}
-          username: ${{ secrets.VPS_USER_PROD }}
-          key: ${{ secrets.VPS_SSH_KEY_PROD }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           source: "./docker-compose.yml"
-          target: "/opt/lams/lams-front"
+          target: "/home/${{ secrets.VPS_USER }}/lams-frontend"
           overwrite: true
 
       - name: Log in to Docker Hub on VPS and deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.VPS_HOST_PROD }}
-          username: ${{ secrets.VPS_USER_PROD }}
-          key: ${{ secrets.VPS_SSH_KEY_PROD }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-            cd /opt/lams/lams-front
+            cd /home/${{ secrets.VPS_USER }}/lams-frontend
             docker-compose pull
-            docker-compose up -d
+            docker-compose up -d 
