@@ -1,4 +1,4 @@
-name: Deploy to VPS
+name: Deploy Main to VPS
 
 on:
   push:
@@ -25,21 +25,21 @@ jobs:
       - name: Copy docker-compose.yml to VPS
         uses: appleboy/scp-action@v0.1.0
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.VPS_HOST_PROD }}
+          username: ${{ secrets.VPS_USER_PROD }}
+          key: ${{ secrets.VPS_SSH_KEY_PROD }}
           source: "./docker-compose.yml"
-          target: "/home/${{ secrets.VPS_USER }}/lams-frontend"
+          target: "/opt/lams/lams-front"
           overwrite: true
 
       - name: Log in to Docker Hub on VPS and deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.VPS_HOST_PROD }}
+          username: ${{ secrets.VPS_USER_PROD }}
+          key: ${{ secrets.VPS_SSH_KEY_PROD }}
           script: |
             echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-            cd /home/${{ secrets.VPS_USER }}/lams-frontend
+            cd /opt/lams/lams-front
             docker-compose pull
             docker-compose up -d
