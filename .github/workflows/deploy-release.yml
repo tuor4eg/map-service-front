@@ -3,7 +3,7 @@ name: Deploy Release to VPS
 on:
   push:
     branches:
-      - release
+      - main
 
 jobs:
   deploy:
@@ -17,10 +17,10 @@ jobs:
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/lams-frontend:release .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/lams-frontend:latest .
 
       - name: Push Docker image to Docker Hub
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/lams-frontend:release
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/lams-frontend:latest
 
       - name: Copy docker-compose.yml to VPS
         uses: appleboy/scp-action@v0.1.0
@@ -42,4 +42,4 @@ jobs:
             echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
             cd /home/${{ secrets.VPS_USER }}/lams-frontend
             docker-compose pull
-            docker-compose up -d 
+            docker-compose up -d
