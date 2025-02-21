@@ -51,6 +51,8 @@
     },
     "map": {
         "searchPlaceholder": "Поиск по адресу...",
-        "resetSearch": "Очистить поиск"
+        "resetSearch": "Очистить поиск",
+        "copyCoordinates": "Скопировать координаты",
+        "coordinatesCopied": "Координаты скопированы!"
     }
 }

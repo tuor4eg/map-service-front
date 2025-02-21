@@ -10,12 +10,19 @@
                     class="search-input"
                     @input="handleSearch"
                 >
-                <i 
-                    v-if="searchQuery || selectedLocation"
-                    class="mdi mdi-close reset-icon"
-                    @click="resetSearch"
-                    :title="t('map.resetSearch')"
-                ></i>
+                <v-tooltip
+                    :text="t('map.resetSearch')"
+                    location="bottom"
+                >
+                    <template v-slot:activator="{ props }">
+                        <i 
+                            v-if="searchQuery || selectedLocation"
+                            class="mdi mdi-close reset-icon"
+                            @click="resetSearch"
+                            v-bind="props"
+                        ></i>
+                    </template>
+                </v-tooltip>
             </div>
             <div v-if="searchResults.length" class="search-results">
                 <div 
@@ -51,11 +58,32 @@
                 </div>
                 <div class="search-marker-popup">
                     <span>{{ selectedLocation.fullAddress }}</span>
-                    <i 
-                        class="mdi mdi-close reset-popup-icon" 
-                        @click="resetSearch"
-                        :title="t('map.resetSearch')"
-                    ></i>
+                    <div class="popup-actions">
+                        <v-tooltip
+                            :text="showCopyTooltip ? t('map.coordinatesCopied') : t('map.copyCoordinates')"
+                            location="top"
+                        >
+                            <template v-slot:activator="{ props }">
+                                <i 
+                                    class="mdi mdi-content-copy copy-icon"
+                                    @click.stop="copyCoordinates(selectedLocation.coordinates)"
+                                    v-bind="props"
+                                ></i>
+                            </template>
+                        </v-tooltip>
+                        <v-tooltip
+                            :text="t('map.resetSearch')"
+                            location="top"
+                        >
+                            <template v-slot:activator="{ props }">
+                                <i 
+                                    class="mdi mdi-close reset-popup-icon" 
+                                    @click="resetSearch"
+                                    v-bind="props"
+                                ></i>
+                            </template>
+                        </v-tooltip>
+                    </div>
                 </div>
             </yandex-map-marker>
 
@@ -130,6 +158,8 @@ const searchTimeout = ref<any>(null)
 
 const { t, locale } = useI18n()
 
+const showCopyTooltip = ref(false)
+
 onMounted(async (): Promise<void> => {
     await getCamerasList()
 
@@ -156,9 +186,60 @@ const getCamerasList = async (): Promise<void> => {
     camerasList.value = cameras
 }
 
-const clickMap = (event: any) => {
+const copyCoordinates = async (coordinates: number[]): Promise<void> => {
+    try {
+        const coordsForClipboard = [...coordinates].reverse().join(', ')
+        await navigator.clipboard.writeText(coordsForClipboard)
+        showCopyTooltip.value = true
+        setTimeout(() => {
+            showCopyTooltip.value = false
+        }, 2000)
+    } catch (error) {
+        console.error('Copy error:', error)
+    }
+}
+
+const geocode = async (query: string): Promise<SearchResult[]> => {
+    try {
+        const response = await fetch(
+            `https://geocode-maps.yandex.ru/1.x/?apikey=${yandexApiKey}&format=json&geocode=${encodeURIComponent(query)}&kind=house&lang=${locale.value === 'ru' ? 'ru_RU' : 'en_US'}`
+        )
+        const data = await response.json()
+        const features = data.response.GeoObjectCollection.featureMember
+        
+        return features
+            .filter((feature: any) => {
+                const kind = feature.GeoObject.metaDataProperty.GeocoderMetaData.kind
+                return ['house', 'locality'].includes(kind)
+            })
+            .map((feature: any) => {
+                const coordinates = feature.GeoObject.Point.pos.split(' ').map(Number) as [number, number]
+                return {
+                    value: feature.GeoObject.name,
+                    fullAddress: feature.GeoObject.metaDataProperty.GeocoderMetaData.Address.formatted,
+                    coordinates,
+                    id: feature.GeoObject.metaDataProperty.GeocoderMetaData.Address.formatted
+                }
+            })
+    } catch (error) {
+        console.error('Geocoding error:', error)
+        return []
+    }
+}
+
+const clickMap = async (event: any) => {
     if (!event && popup.value) {
         popup.value = null
+        return
+    }
+
+    if (event?.entity?.geometry?.coordinates) {
+        const [longitude, latitude] = event.entity.geometry.coordinates
+        const results = await geocode(`${longitude},${latitude}`)
+        
+        if (results.length > 0) {
+            selectedLocation.value = results[0]
+        }
     }
 }
 
@@ -187,26 +268,7 @@ const handleSearch = async (): Promise<void> => {
     }
 
     searchTimeout.value = setTimeout(async () => {
-        try {
-            const response = await fetch(
-                `https://geocode-maps.yandex.ru/1.x/?apikey=${yandexApiKey}&format=json&geocode=${encodeURIComponent(searchQuery.value)}&lang=${locale.value === 'ru' ? 'ru_RU' : 'en_US'}`
-            )
-            const data = await response.json()
-            const features = data.response.GeoObjectCollection.featureMember
-            
-            searchResults.value = features.map((feature: any) => {
-                const coordinates = feature.GeoObject.Point.pos.split(' ').map(Number) as [number, number]
-                return {
-                    value: feature.GeoObject.name,
-                    fullAddress: feature.GeoObject.metaDataProperty.GeocoderMetaData.Address.formatted,
-                    coordinates,
-                    id: feature.GeoObject.metaDataProperty.GeocoderMetaData.Address.formatted
-                }
-            })
-        } catch (error) {
-            console.error('Ошибка при поиске адреса:', error)
-            searchResults.value = []
-        }
+        searchResults.value = await geocode(searchQuery.value)
     }, 300)
 }
 
@@ -241,16 +303,6 @@ defineExpose({
 yandex-map {
     width: 100%;
     height: 100%;
-}
-
-.marker-popup {
-    background: #fff;
-    border-radius: 10px;
-    padding: 10px;
-    color: black;
-    cursor: pointer;
-    font-size: 14px;
-    white-space: nowrap;
 }
 
 .cluster {
@@ -321,18 +373,6 @@ yandex-map {
     margin-right: 8px;
 }
 
-.reset-icon {
-    color: #666;
-    font-size: 18px;
-    cursor: pointer;
-    padding: 4px;
-    transition: color 0.2s;
-}
-
-.reset-icon:hover {
-    color: #E53935;
-}
-
 .search-results {
     position: absolute;
     top: 100%;
@@ -398,7 +438,16 @@ yandex-map {
     gap: 8px;
 }
 
-.reset-popup-icon {
+.popup-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 8px;
+}
+
+.copy-icon,
+.reset-popup-icon,
+.reset-icon {
     color: #666;
     font-size: 16px;
     cursor: pointer;
@@ -406,7 +455,12 @@ yandex-map {
     transition: color 0.2s;
 }
 
-.reset-popup-icon:hover {
+.copy-icon:hover {
+    color: #2196F3;
+}
+
+.reset-popup-icon:hover,
+.reset-icon:hover {
     color: #E53935;
 }
 </style>

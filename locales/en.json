@@ -48,6 +48,8 @@
     },
     "map": {
         "searchPlaceholder": "Search by address...",
-        "resetSearch": "Clear search"
+        "resetSearch": "Clear search",
+        "copyCoordinates": "Copy coordinates",
+        "coordinatesCopied": "Coordinates copied!"
     }
 }
