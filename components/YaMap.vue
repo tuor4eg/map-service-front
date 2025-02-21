@@ -1,5 +1,34 @@
 <template>
     <div class="map-container">
+        <div v-if="map" class="search-container">
+            <div class="search-box">
+                <i class="mdi mdi-magnify search-icon"></i>
+                <input 
+                    type="text" 
+                    v-model="searchQuery" 
+                    :placeholder="t('map.searchPlaceholder')"
+                    class="search-input"
+                    @input="handleSearch"
+                >
+                <i 
+                    v-if="searchQuery || selectedLocation"
+                    class="mdi mdi-close reset-icon"
+                    @click="resetSearch"
+                    :title="t('map.resetSearch')"
+                ></i>
+            </div>
+            <div v-if="searchResults.length" class="search-results">
+                <div 
+                    v-for="result in searchResults" 
+                    :key="result.id"
+                    class="search-result-item"
+                    @click="selectAddress(result)"
+                >
+                    <div class="search-result-name">{{ result.value }}</div>
+                    <div class="search-result-address">{{ result.fullAddress }}</div>
+                </div>
+            </div>
+        </div>
         <yandex-map
             v-model="map"
             :settings="{
@@ -11,6 +40,25 @@
         >
             <yandex-map-default-scheme-layer />
             <yandex-map-default-features-layer />
+            
+            <!-- Маркер для найденного адреса -->
+            <yandex-map-marker
+                v-if="selectedLocation"
+                :settings="{ coordinates: selectedLocation.coordinates }"
+            >
+                <div class="search-marker">
+                    <i class="mdi mdi-map-marker"></i>
+                </div>
+                <div class="search-marker-popup">
+                    <span>{{ selectedLocation.fullAddress }}</span>
+                    <i 
+                        class="mdi mdi-close reset-popup-icon" 
+                        @click="resetSearch"
+                        :title="t('map.resetSearch')"
+                    ></i>
+                </div>
+            </yandex-map-marker>
+
             <yandex-map-clusterer zoom-on-cluster-click>
                 <template v-for="camera in camerasList">
                     <yandex-map-marker
@@ -35,9 +83,10 @@
                 </template>
             </yandex-map-clusterer>
             <yandex-map-listener 
-            :settings="{
-                onClick: clickMap
-            }"/>
+                :settings="{
+                    onClick: clickMap
+                }"
+            ></yandex-map-listener>
         </yandex-map>
     </div>
 </template>
@@ -51,19 +100,37 @@ import {
     YandexMapDefaultFeaturesLayer,
     YandexMapListener,
     YandexMapClusterer,
-    YandexMapMarker
+    YandexMapMarker,
 } from 'vue-yandex-maps'
-import type { TCamera } from '../types/types'
+import type ApiService from '@/services/api.service'
+import type { TCamera } from '~/types/types'
+import { useI18n } from 'vue-i18n'
 
 const map = shallowRef<null | YMap>(null)
-const popup = ref<null | number>(null)
+const popup = ref<null | string>(null)
+const selectedLocation = ref<SearchResult | null>(null)
 
 const centerCoords = ref([37.573856, 55.751574])
-const camerasList = ref<Array<any>>([])
+const camerasList = ref<Array<TCamera>>([])
 
-const apiService: any = useNuxtApp().$apiService
+const apiService = useNuxtApp().$apiService as ApiService
+const config = useRuntimeConfig()
+const yandexApiKey = config.public.yandexMaps.apikey
 
-onMounted(async () => {
+interface SearchResult {
+    value: string
+    fullAddress: string
+    coordinates: [number, number]
+    id: string
+}
+
+const searchQuery = ref('')
+const searchResults = ref<Array<SearchResult>>([])
+const searchTimeout = ref<any>(null)
+
+const { t, locale } = useI18n()
+
+onMounted(async (): Promise<void> => {
     await getCamerasList()
 
     if (navigator.geolocation) {
@@ -83,7 +150,7 @@ onMounted(async () => {
     }
 })
 
-const getCamerasList = async () => {
+const getCamerasList = async (): Promise<void> => {
     const { cameras } = await apiService.cameraList()
 
     camerasList.value = cameras
@@ -95,7 +162,7 @@ const clickMap = (event: any) => {
     }
 }
 
-const centerMap = (coordinates: number[]) => {
+const centerMap = (coordinates: number[]): void => {
     if (map.value && Array.isArray(coordinates) && coordinates.length === 2) {
         map.value.setLocation({ 
             center: coordinates as LngLat,
@@ -105,10 +172,55 @@ const centerMap = (coordinates: number[]) => {
     }
 }
 
-const showCamera = (cameraId: number) => {
+const showCamera = (cameraId: string): void => {
     if (cameraId) {
         popup.value = cameraId
     }
+}
+
+const handleSearch = async (): Promise<void> => {
+    if (searchTimeout.value) clearTimeout(searchTimeout.value)
+    
+    if (!searchQuery.value) {
+        searchResults.value = []
+        return
+    }
+
+    searchTimeout.value = setTimeout(async () => {
+        try {
+            const response = await fetch(
+                `https://geocode-maps.yandex.ru/1.x/?apikey=${yandexApiKey}&format=json&geocode=${encodeURIComponent(searchQuery.value)}&lang=${locale.value === 'ru' ? 'ru_RU' : 'en_US'}`
+            )
+            const data = await response.json()
+            const features = data.response.GeoObjectCollection.featureMember
+            
+            searchResults.value = features.map((feature: any) => {
+                const coordinates = feature.GeoObject.Point.pos.split(' ').map(Number) as [number, number]
+                return {
+                    value: feature.GeoObject.name,
+                    fullAddress: feature.GeoObject.metaDataProperty.GeocoderMetaData.Address.formatted,
+                    coordinates,
+                    id: feature.GeoObject.metaDataProperty.GeocoderMetaData.Address.formatted
+                }
+            })
+        } catch (error) {
+            console.error('Ошибка при поиске адреса:', error)
+            searchResults.value = []
+        }
+    }, 300)
+}
+
+const selectAddress = (result: SearchResult): void => {
+    searchQuery.value = result.value
+    selectedLocation.value = result
+    centerMap(result.coordinates)
+    searchResults.value = []
+}
+
+const resetSearch = (): void => {
+    searchQuery.value = ''
+    searchResults.value = []
+    selectedLocation.value = null
 }
 
 defineExpose({
@@ -174,5 +286,127 @@ yandex-map {
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
+}
+
+.search-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    width: 300px;
+}
+
+.search-box {
+    background: white;
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.search-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    padding: 4px 8px;
+    background: transparent;
+}
+
+.search-icon {
+    color: #666;
+    font-size: 20px;
+    margin-right: 8px;
+}
+
+.reset-icon {
+    color: #666;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+.reset-icon:hover {
+    color: #E53935;
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    margin-top: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.search-result-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.search-result-item:hover {
+    background-color: #f5f5f5;
+}
+
+.search-result-name {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.search-result-address {
+    font-size: 12px;
+    color: #666;
+}
+
+.search-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    position: relative;
+}
+
+.search-marker i.mdi-map-marker {
+    color: #E53935;
+    font-size: 32px;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.2));
+}
+
+.search-marker-popup {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reset-popup-icon {
+    color: #666;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+.reset-popup-icon:hover {
+    color: #E53935;
 }
 </style>
