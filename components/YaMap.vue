@@ -39,10 +39,14 @@
         <yandex-map
             v-model="map"
             :settings="{
-            location: {
-                center: centerCoords as LngLat,
-                zoom: 9,
-            },
+                location: {
+                    center: centerCoords as LngLat,
+                    zoom: 15,
+                }
+            }"
+            :options="{
+                minZoom: 2,
+                maxZoom: 19
             }"
         >
             <yandex-map-default-scheme-layer />
@@ -87,18 +91,43 @@
                 </div>
             </yandex-map-marker>
 
-            <yandex-map-clusterer zoom-on-cluster-click>
-                <template v-for="camera in camerasList">
+            <yandex-map-clusterer 
+                zoom-on-cluster-click
+            >
+                <template v-for="[coords, cameras] in groupedCameras" :key="coords">
                     <yandex-map-marker
-                        :settings="{ coordinates: camera.coordinates, onClick: () => popup = camera._id }"
+                        :settings="{ 
+                            coordinates: coords.split(',').map(Number).reverse() as LngLat
+                        }"
                     >
                         <div class="cluster">
                             <i class="mdi mdi-cctv"></i>
+                            <span v-if="cameras.length > 1" class="cluster-count">{{ cameras.length }}</span>
+                        </div>
+                        <div 
+                            class="cluster-hover-area"
+                            @mouseenter="handleMarkerHover(coords)"
+                            @mouseleave="handleMarkerLeave()"
+                        >
+                            <div v-if="hoveredMarker === coords && !popup" class="cameras-hover-menu">
+                                <div class="cameras-list">
+                                    <div 
+                                        v-for="camera in cameras" 
+                                        :key="camera._id"
+                                        class="camera-item"
+                                        @click.stop="handleCameraClick(camera._id)"
+                                    >
+                                        <v-icon icon="mdi-cctv" size="small" color="primary" class="mr-2" />
+                                        {{ camera.title }}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <camera-card 
                             :close="() => popup = null" 
-                            v-if="popup === camera._id" 
-                            :id="camera._id"
+                            v-if="popup && cameras.some(cam => cam._id === popup)" 
+                            :id="popup"
+                            :address="currentAddress"
                             class="camera-card-popup" 
                         />
                     </yandex-map-marker>
@@ -120,7 +149,7 @@
 </template>
 
 <script setup lang="ts">
-import { shallowRef, ref } from 'vue'
+import { shallowRef, ref, computed } from 'vue'
 import type { YMap, LngLat } from '@yandex/ymaps3-types'
 import {
     YandexMap,
@@ -133,15 +162,34 @@ import {
 import type ApiService from '@/services/api.service'
 import type { TCamera } from '~/types/types'
 import { useI18n } from 'vue-i18n'
+import { useCamerasStore } from '~/stores/cameras.store'
 
 const map = shallowRef<null | YMap>(null)
 const popup = ref<null | string>(null)
+const hoveredMarker = ref<string | null>(null)
 const selectedLocation = ref<SearchResult | null>(null)
+const currentAddress = ref('')
 
 const centerCoords = ref([37.573856, 55.751574])
-const camerasList = ref<Array<TCamera>>([])
+
+const camerasStore = useCamerasStore()
+
+const groupedCameras = computed(() => {
+    const groups = new Map<string, TCamera[]>()
+    
+    camerasStore.cameras.forEach(camera => {
+        const key = camera.coordinates.join(',')
+        if (!groups.has(key)) {
+            groups.set(key, [])
+        }
+        groups.get(key)!.push(camera)
+    })
+    
+    return groups
+})
 
 const apiService = useNuxtApp().$apiService as ApiService
+const geocodingService = useNuxtApp().$geocodingService
 const config = useRuntimeConfig()
 const yandexApiKey = config.public.yandexMaps.apikey
 
@@ -161,8 +209,6 @@ const { t, locale } = useI18n()
 const showCopyTooltip = ref(false)
 
 onMounted(async (): Promise<void> => {
-    await getCamerasList()
-
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             position => {
@@ -179,12 +225,6 @@ onMounted(async (): Promise<void> => {
         console.error('Geolocation is not supported by this browser.')
     }
 })
-
-const getCamerasList = async (): Promise<void> => {
-    const { cameras } = await apiService.cameraList()
-
-    camerasList.value = cameras
-}
 
 const copyCoordinates = async (coordinates: number[]): Promise<void> => {
     try {
@@ -228,7 +268,7 @@ const geocode = async (query: string): Promise<SearchResult[]> => {
 }
 
 const clickMap = async (event: any) => {
-    if (!event && popup.value) {
+    if (!event || popup.value) {
         popup.value = null
         return
     }
@@ -238,7 +278,10 @@ const clickMap = async (event: any) => {
         const results = await geocode(`${longitude},${latitude}`)
         
         if (results.length > 0) {
-            selectedLocation.value = results[0]
+            selectedLocation.value = {
+                ...results[0],
+                coordinates: [longitude, latitude]
+            }
         }
     }
 }
@@ -268,7 +311,7 @@ const handleSearch = async (): Promise<void> => {
     }
 
     searchTimeout.value = setTimeout(async () => {
-        searchResults.value = await geocode(searchQuery.value)
+        searchResults.value = await geocodingService.geocode(searchQuery.value, locale.value)
     }, 300)
 }
 
@@ -283,6 +326,27 @@ const resetSearch = (): void => {
     searchQuery.value = ''
     searchResults.value = []
     selectedLocation.value = null
+}
+
+const handleMarkerHover = (coords: string) => {
+    hoveredMarker.value = coords
+}
+
+const handleMarkerLeave = () => {
+    hoveredMarker.value = null
+}
+
+const handleCameraClick = async (cameraId: string) => {
+    popup.value = cameraId
+    const cameras = groupedCameras.value.get(hoveredMarker.value || '')
+    const camera = cameras?.find((c: TCamera) => c._id === cameraId)
+    if (camera) {
+        currentAddress.value = await getAddressFromCoords(camera.coordinates)
+    }
+}
+
+const getAddressFromCoords = async (coordinates: number[]): Promise<string> => {
+    return await geocodingService.getAddressFromCoords(coordinates)
 }
 
 defineExpose({
@@ -316,20 +380,31 @@ yandex-map {
     height: 40px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     border: 2px solid #2196F3;
+    position: relative;
+    z-index: -1;
 }
 
 .cluster i {
-    font-size: 18px;
+    font-size: 20px;
     color: #2196F3;
-    margin-top: -2px;
 }
 
 .cluster-count {
-    font-size: 10px;
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #E53935;
+    color: white;
+    border-radius: 50%;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
     font-weight: bold;
-    color: #333;
-    margin-top: -2px;
-    line-height: 1;
+    padding: 0 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .camera-card-popup {
@@ -462,5 +537,47 @@ yandex-map {
 .reset-popup-icon:hover,
 .reset-icon:hover {
     color: #E53935;
+}
+
+.cluster-hover-area {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    z-index: 10000;
+}
+
+.cameras-hover-menu {
+    position: absolute;
+    bottom: 45px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 8px;
+    min-width: 200px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 10001;
+    pointer-events: auto;
+}
+
+.cameras-list {
+    padding: 8px 0;
+}
+
+.camera-item {
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.camera-item:hover {
+    background-color: #f5f5f5;
 }
 </style>
