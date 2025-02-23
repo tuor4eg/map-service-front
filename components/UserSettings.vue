@@ -8,15 +8,45 @@
                     :items="availableLanguages"
                 ></v-select>
             </v-list-item>
-        </v-list>
-            <v-btn
-                color="primary"
-                @click="saveSettings"
-            >
-                {{ t('userMenu.userSettings.saveButton') }}
-            </v-btn>
 
-        <!-- Добавляем snackbar для уведомлений -->
+            <v-list-item>
+                <v-card class="pa-4 mt-4">
+                    <v-card-title>{{ t('userMenu.userSettings.password.title') }}</v-card-title>
+                    <v-card-text>
+                        <v-form 
+                            v-model="passwordForm.valid"
+                            ref="formRef"
+                        >
+                            <v-text-field
+                                v-model="passwordForm.newPassword"
+                                :label="t('userMenu.userSettings.password.new')"
+                                :type="showPassword.new ? 'text' : 'password'"
+                                :rules="[rules.passwordLength, rules.passwordComplexity]"
+                                :append-inner-icon="showPassword.new ? 'mdi-eye-off' : 'mdi-eye'"
+                                @click:append-inner="showPassword.new = !showPassword.new"
+                            ></v-text-field>
+                            <v-text-field
+                                v-model="passwordForm.confirmPassword"
+                                :label="t('userMenu.userSettings.password.confirm')"
+                                :type="showPassword.confirm ? 'text' : 'password'"
+                                :rules="[rules.passwordMatch]"
+                                :required="!!passwordForm.newPassword"
+                                :append-inner-icon="showPassword.confirm ? 'mdi-eye-off' : 'mdi-eye'"
+                                @click:append-inner="showPassword.confirm = !showPassword.confirm"
+                            ></v-text-field>
+                        </v-form>
+                    </v-card-text>
+                </v-card>
+            </v-list-item>
+        </v-list>
+        <v-btn
+            color="primary"
+            @click="saveSettings"
+            :disabled="!!passwordForm.newPassword && (!passwordForm.valid || !passwordForm.confirmPassword)"
+        >
+            {{ t('userMenu.userSettings.saveButton') }}
+        </v-btn>
+
         <v-snackbar
             v-model="snackbar.show"
             :color="snackbar.color"
@@ -49,17 +79,58 @@ const snackbar = ref({
     color: 'success'
 })
 
+const rules = {
+    passwordLength: (value) => !value || value.length >= 8 || t('userMenu.userSettings.rules.passwordLength'),
+    passwordComplexity: (value) => {
+        if (!value) return true
+        const hasUpperCase = /[A-Z]/.test(value)
+        const hasLowerCase = /[a-z]/.test(value)
+        const hasNumbers = /\d/.test(value)
+        return (hasUpperCase && hasLowerCase && hasNumbers) || t('userMenu.userSettings.rules.passwordComplexity')
+    },
+    passwordMatch: (value) => {
+        if (!passwordForm.value.newPassword) return true
+        return value === passwordForm.value.newPassword || t('userMenu.userSettings.rules.passwordMatch')
+    }
+}
+
+const passwordForm = ref({
+    valid: false,
+    newPassword: '',
+    confirmPassword: ''
+})
+
+const formRef = ref(null)
+
+const showPassword = ref({
+    new: false,
+    confirm: false
+})
+
+const resetPasswordForm = () => {
+    passwordForm.value.newPassword = ''
+    passwordForm.value.confirmPassword = ''
+    formRef.value?.resetValidation()
+}
+
 const saveSettings = async () => {
     try {
-        locale.value = settings.value.language
-
         const data = {
             settings: {
-                language: locale.value
+                language: settings.value.language
             }
         }
 
+        if (passwordForm.value.newPassword && passwordForm.value.valid) {
+            data.password = passwordForm.value.newPassword
+        }
+
         await apiService.updateUser(data)
+        locale.value = settings.value.language
+
+        if (data.password) {
+            resetPasswordForm()
+        }
         
         snackbar.value = {
             show: true,

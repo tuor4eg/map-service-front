@@ -24,13 +24,16 @@
         "close": "Закрыть",
         "copyCoordinates": "Скопировать координаты",
         "coordinatesCopied": "Скопировано!",
-        "connect": "Подключиться"
+        "connect": "Подключиться",
+        "credentials": "Учетные данные",
+        "ownerContact": "Контактная информация"
     },
     "userMenu": {
         "camerasList": {
             "title": "Список камер",
             "openViewer": "Открыть на карте",
-            "addFavorite": "Добавить в избранное"
+            "addFavorite": "Добавить в избранное",
+            "search": "Поиск камер..."
         },
         "starred": "Избранное",
         "settings": "Настройки",
@@ -44,9 +47,26 @@
                     "en": "English"
                 }
             },
+            "password": {
+                "title": "Изменение пароля",
+                "new": "Новый пароль",
+                "confirm": "Подтвердите новый пароль"
+            },
+            "rules": {
+                "required": "Это поле обязательно для заполнения",
+                "passwordLength": "Пароль должен быть не менее 8 символов",
+                "passwordComplexity": "Пароль должен содержать заглавные и строчные буквы, а также цифры",
+                "passwordMatch": "Пароли должны совпадать"
+            },
             "saveButton": "Сохранить настройки",
             "saveSuccess": "Настройки успешно сохранены",
             "saveError": "Ошибка при сохранении настроек"
         }
+    },
+    "map": {
+        "searchPlaceholder": "Поиск по адресу...",
+        "resetSearch": "Очистить поиск",
+        "copyCoordinates": "Скопировать координаты",
+        "coordinatesCopied": "Координаты скопированы!"
     }
 }

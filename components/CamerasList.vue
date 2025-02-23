@@ -1,11 +1,20 @@
 <template>
     <div>
+        <v-text-field
+            v-model="searchQuery"
+            :label="t('userMenu.camerasList.search')"
+            prepend-inner-icon="mdi-magnify"
+            class="pa-6 pb-0"
+            hide-details
+            variant="outlined"
+            density="compact"
+        />
         <v-list class="pa-6">
             <v-list-item
-                v-for="camera in cameras"
+                v-for="camera in filteredCameras"
                 :key="camera._id"
                 :title="camera.title"
-                :subtitle="camera.description"
+                :subtitle="camera.address || camera.description"
                 :value="camera"
             >
                 <template v-slot:append>
@@ -23,17 +32,6 @@
                                 />
                             </template>
                         </v-tooltip>
-                        <!---<v-tooltip :text="t('userMenu.camerasList.addFavorite')">
-                            <template v-slot:activator="{ props }">
-                                <v-icon
-                                    v-bind="props"
-                                    @click.stop="toggleFavorite(camera)"
-                                    color="grey"
-                                >
-                                    mdi-star
-                                </v-icon>
-                            </template>
-                        </v-tooltip>-->
                     </div>
                 </template>
             </v-list-item>
@@ -42,43 +40,46 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import type { TCamera, TUser } from '../types/types'
-import type ApiService from '@/services/api.service'
+import { ref, onMounted, computed } from 'vue'
+import type { TCamera } from '../types/types'
+import { useCamerasStore } from '~/stores/cameras.store'
 
 const { t } = useI18n()
+const geocodingService = useNuxtApp().$geocodingService
+const camerasStore = useCamerasStore()
 
-const apiService = useNuxtApp().$apiService as ApiService
-const cameras = ref<TCamera[]>([])
+interface CameraWithAddress extends TCamera {
+    address?: string
+}
 
-const userStore = useUserStore()
+const camerasWithAddresses = ref<CameraWithAddress[]>([])
+const searchQuery = ref('')
 
-const user = computed<TUser | null>(() => userStore.user)
+onMounted(async () => {
+    camerasWithAddresses.value = await Promise.all(
+        camerasStore.cameras.map(async (camera) => {
+            const address = await geocodingService.getAddressFromCoords(camera.coordinates)
+            return { ...camera, address }
+        })
+    )
+})
 
-const selectedCamera = ref<TCamera | null>(null)
+const filteredCameras = computed(() => {
+    const query = searchQuery.value.toLowerCase()
+    if (!query) return camerasWithAddresses.value
+    
+    return camerasWithAddresses.value.filter(camera => {
+        const titleMatch = camera.title.toLowerCase().includes(query)
+        const addressMatch = camera.address?.toLowerCase().includes(query) || false
+        const descriptionMatch = camera.description?.toLowerCase().includes(query) || false
+        return titleMatch || addressMatch || descriptionMatch
+    })
+})
 
 const selectCamera = (camera: TCamera) => {
-    selectedCamera.value = camera
     emit('update:modelValue', camera)
     emit('close')
 }
-
-const toggleFavorite = async (camera: TCamera) => {
-    try {
-        console.log('toggle')
-    } catch (error) {
-        console.error('Error toggling favorite:', error)
-    }
-}
-
-onMounted(async () => {
-    try {
-        const response = await apiService.сamerasByUser(user.value!.id)
-        cameras.value = response.cameras
-    } catch (error) {
-        console.error('Error loading cameras:', error)
-    }
-})
 
 const emit = defineEmits(['update:modelValue', 'close'])
 </script>

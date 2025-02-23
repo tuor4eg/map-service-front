@@ -107,13 +107,13 @@ class ApiService {
 
         this.ensureDeviceUUID()
 
-        if (body) request.body = body
+        if (body) request.body = JSON.stringify(body)
 
-        if (this.refreshing) return await $fetch(url, request)
+        if (this.refreshing) return await $fetch<any>(url, request)
 
         return this.mutex.runExclusive(async () => {
             try {
-                return await $fetch(url, request)
+                return await $fetch<any>(url, request)
             } catch (err) {
                 if (this.isAuthError(err) && !this.hasNoAuth(endpoint)) {
                     try {
@@ -125,7 +125,7 @@ class ApiService {
 
                         request.headers = this.getHeaders(options)
 
-                        return await $fetch(url, request)
+                        return await $fetch<any>(url, request)
                     } catch (err) {
                         navigateTo('/login')
                     }

@@ -21,13 +21,16 @@
     },
     "cameraInfo": {
         "close": "Close",
-        "connect": "Connect"
+        "connect": "Connect",
+        "credentials": "Credentials",
+        "ownerContact": "Contact Information"
     },
     "userMenu": {
         "camerasList": {
             "title": "Cameras List",
             "openViewer": "Open on map",
-            "addFavorite": "Add to favorites"
+            "addFavorite": "Add to favorites",
+            "search": "Search cameras..."
         },
         "starred": "Starred",
         "settings": "Settings",
@@ -41,9 +44,26 @@
                     "en": "English"
                 }
             },
+            "password": {
+                "title": "Change Password",
+                "new": "New Password",
+                "confirm": "Confirm New Password"
+            },
+            "rules": {
+                "required": "This field is required",
+                "passwordLength": "Password must be at least 8 characters long",
+                "passwordComplexity": "Password must contain uppercase and lowercase letters, and numbers",
+                "passwordMatch": "Passwords must match"
+            },
             "saveButton": "Save Settings",
             "saveSuccess": "Settings saved successfully",
             "saveError": "Error saving settings"
         }
+    },
+    "map": {
+        "searchPlaceholder": "Search by address...",
+        "resetSearch": "Clear search",
+        "copyCoordinates": "Copy coordinates",
+        "coordinatesCopied": "Coordinates copied!"
     }
 }

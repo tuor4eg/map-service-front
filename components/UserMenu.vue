@@ -115,7 +115,6 @@ const logout = async () => {
 const { t } = useI18n()
 
 const userStore = useUserStore()
-
 const user = computed(() => userStore.user)
 
 const emit = defineEmits(['select-camera'])
@@ -150,7 +149,7 @@ const handleCameraSelect = (camera: TCamera) => {
 .close-button-container {
     position: fixed;
     top: 8px;
-    right: 8px;
+    right: 32px;
     z-index: 100;
 }
 
