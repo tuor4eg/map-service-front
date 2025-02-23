@@ -127,7 +127,6 @@
                             :close="() => popup = null" 
                             v-if="popup && cameras.some(cam => cam._id === popup)" 
                             :id="popup"
-                            :address="currentAddress"
                             class="camera-card-popup" 
                         />
                     </yandex-map-marker>
@@ -159,7 +158,6 @@ import {
     YandexMapClusterer,
     YandexMapMarker,
 } from 'vue-yandex-maps'
-import type ApiService from '@/services/api.service'
 import type { TCamera } from '~/types/types'
 import { useI18n } from 'vue-i18n'
 import { useCamerasStore } from '~/stores/cameras.store'
@@ -168,7 +166,6 @@ const map = shallowRef<null | YMap>(null)
 const popup = ref<null | string>(null)
 const hoveredMarker = ref<string | null>(null)
 const selectedLocation = ref<SearchResult | null>(null)
-const currentAddress = ref('')
 
 const centerCoords = ref([37.573856, 55.751574])
 
@@ -188,10 +185,8 @@ const groupedCameras = computed(() => {
     return groups
 })
 
-const apiService = useNuxtApp().$apiService as ApiService
 const geocodingService = useNuxtApp().$geocodingService
 const config = useRuntimeConfig()
-const yandexApiKey = config.public.yandexMaps.apikey
 
 interface SearchResult {
     value: string
@@ -239,34 +234,6 @@ const copyCoordinates = async (coordinates: number[]): Promise<void> => {
     }
 }
 
-const geocode = async (query: string): Promise<SearchResult[]> => {
-    try {
-        const response = await fetch(
-            `https://geocode-maps.yandex.ru/1.x/?apikey=${yandexApiKey}&format=json&geocode=${encodeURIComponent(query)}&kind=house&lang=${locale.value === 'ru' ? 'ru_RU' : 'en_US'}`
-        )
-        const data = await response.json()
-        const features = data.response.GeoObjectCollection.featureMember
-        
-        return features
-            .filter((feature: any) => {
-                const kind = feature.GeoObject.metaDataProperty.GeocoderMetaData.kind
-                return ['house', 'locality'].includes(kind)
-            })
-            .map((feature: any) => {
-                const coordinates = feature.GeoObject.Point.pos.split(' ').map(Number) as [number, number]
-                return {
-                    value: feature.GeoObject.name,
-                    fullAddress: feature.GeoObject.metaDataProperty.GeocoderMetaData.Address.formatted,
-                    coordinates,
-                    id: feature.GeoObject.metaDataProperty.GeocoderMetaData.Address.formatted
-                }
-            })
-    } catch (error) {
-        console.error('Geocoding error:', error)
-        return []
-    }
-}
-
 const clickMap = async (event: any) => {
     if (!event || popup.value) {
         popup.value = null
@@ -275,7 +242,7 @@ const clickMap = async (event: any) => {
 
     if (event?.entity?.geometry?.coordinates) {
         const [longitude, latitude] = event.entity.geometry.coordinates
-        const results = await geocode(`${longitude},${latitude}`)
+        const results = await geocodingService.geocode(`${longitude},${latitude}`, locale.value)
         
         if (results.length > 0) {
             selectedLocation.value = {
@@ -340,9 +307,6 @@ const handleCameraClick = async (cameraId: string) => {
     popup.value = cameraId
     const cameras = groupedCameras.value.get(hoveredMarker.value || '')
     const camera = cameras?.find((c: TCamera) => c._id === cameraId)
-    if (camera) {
-        currentAddress.value = await getAddressFromCoords(camera.coordinates)
-    }
 }
 
 const getAddressFromCoords = async (coordinates: number[]): Promise<string> => {
