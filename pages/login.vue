@@ -4,6 +4,11 @@
         style="height: 100vh"
     >
         <v-card width="400">
+            <v-card-text v-if="debug" class="debug-info">
+                <pre>Access Token: {{ accessToken }}</pre>
+                <pre>Refresh Token: {{ refreshToken }}</pre>
+                <pre>Headers: {{ currentHeaders }}</pre>
+            </v-card-text>
             <v-card-title>
                 <v-container>
                     <v-row>
@@ -99,10 +104,30 @@ const login = async () => {
         toast.value.message = t('loginPage.loginError')
     }
 }
+
+const debug = ref(true)
+const accessToken = computed(() => useCookie('accessToken', { sameSite: 'lax' }).value)
+const refreshToken = computed(() => useCookie('refreshToken', { sameSite: 'lax' }).value)
+const currentHeaders = computed(() => {
+    const headers = {}
+    if (accessToken.value) {
+        headers['Authorization'] = `Bearer ${accessToken.value}`
+    }
+    return headers
+})
 </script>
 
 <style scoped>
 v-container {
     background-color: #f5f5f5;
+}
+
+.debug-info {
+    background-color: #f5f5f5;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 </style>
