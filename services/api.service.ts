@@ -73,12 +73,19 @@ class ApiService {
         const authToken = useCookie(ACCESS_TOKEN, { sameSite: 'lax' })
         const refreshToken = useCookie(REFRESH_TOKEN, { sameSite: 'lax' })
 
+        console.log('Auth token:', authToken.value)
+        console.log('Refresh token:', refreshToken.value)
+        console.log('Is refreshing:', this.refreshing)
+
         const token = this.refreshing
             ? refreshToken.value
             : authToken.value
 
+        console.log('Selected token:', token)
+
         if (token) {
             headers['Authorization'] = `Bearer ${token}`
+            console.log('Final headers:', headers)
         }
 
         return headers
