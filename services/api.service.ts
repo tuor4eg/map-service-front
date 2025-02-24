@@ -70,14 +70,16 @@ class ApiService {
     getHeaders(options: any): Record<string, string> {
         const headers = Object.assign({}, this.headers, options)
 
-        const authToken = useCookie(ACCESS_TOKEN, { sameSite: true })
-        const refreshToken = useCookie(REFRESH_TOKEN, { sameSite: true })
+        const authToken = useCookie(ACCESS_TOKEN, { sameSite: 'lax' })
+        const refreshToken = useCookie(REFRESH_TOKEN, { sameSite: 'lax' })
 
         const token = this.refreshing
             ? refreshToken.value
             : authToken.value
 
-        headers['Authorization'] = `Bearer ${token}`
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`
+        }
 
         return headers
     }
@@ -151,8 +153,8 @@ class ApiService {
     async logout(): Promise<void> {
         await this.post(API_ENDPOINTS.USER_LOGOUT, {})
 
-        const authToken = useCookie(ACCESS_TOKEN, { sameSite: true })
-        const refreshToken = useCookie(REFRESH_TOKEN, { sameSite: true })
+        const authToken = useCookie(ACCESS_TOKEN, { sameSite: 'lax' })
+        const refreshToken = useCookie(REFRESH_TOKEN, { sameSite: 'lax' })
 
         authToken.value = null
         refreshToken.value = null
