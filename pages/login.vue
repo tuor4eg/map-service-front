@@ -8,7 +8,7 @@
                 <pre>Access Token: {{ accessToken }}</pre>
                 <pre>Refresh Token: {{ refreshToken }}</pre>
                 <pre>Headers: {{ currentHeaders }}</pre>
-                <pre>v.0002</pre>
+                <pre>v.0003</pre>
             </v-card-text>
             <v-card-title>
                 <v-container>
@@ -94,13 +94,16 @@ const login = async () => {
                 password: password.value
             })
 
-            const store = useUserStore()
+            console.log('Login response:', res)
+            console.log('Response cookies:', document.cookie)
 
+            const store = useUserStore()
             store.setUser(res.user)
 
             navigateTo('/')
         }
     } catch (e) {
+        console.error('Login error:', e)
         toast.value.show = true
         toast.value.message = t('loginPage.loginError')
     }
