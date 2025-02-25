@@ -8,7 +8,7 @@
                 <pre>Access Token: {{ accessToken }}</pre>
                 <pre>Refresh Token: {{ refreshToken }}</pre>
                 <pre>Headers: {{ currentHeaders }}</pre>
-                <pre>v.0003</pre>
+                <pre>v.0004</pre>
             </v-card-text>
             <v-card-title>
                 <v-container>
@@ -110,8 +110,15 @@ const login = async () => {
 }
 
 const debug = ref(true)
-const accessToken = computed(() => useCookie('accessToken', { sameSite: 'lax' }).value)
-const refreshToken = computed(() => useCookie('refreshToken', { sameSite: 'lax' }).value)
+const config = useRuntimeConfig()
+const cookieParams = {
+    sameSite: 'none',
+    secure: config.public.nodeEnv === 'production',
+    path: '/',
+    httpOnly: false
+}
+const accessToken = computed(() => useCookie('accessToken', cookieParams).value)
+const refreshToken = computed(() => useCookie('refreshToken', cookieParams).value)
 const currentHeaders = computed(() => {
     const headers = {}
     if (accessToken.value) {
@@ -119,6 +126,9 @@ const currentHeaders = computed(() => {
     }
     return headers
 })
+
+const cookieOptions = computed(() => cookieParams)
+const runtimeConfig = computed(() => config)
 </script>
 
 <style scoped>

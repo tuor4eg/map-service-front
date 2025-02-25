@@ -76,7 +76,7 @@ class ApiService {
         console.log('Environment value:', config.public.nodeEnv)
         
         const cookieOptions = {
-            sameSite: 'lax' as const,
+            sameSite: 'none' as const,
             secure: config.public.nodeEnv === 'production',
             path: '/',
             httpOnly: false
@@ -175,7 +175,7 @@ class ApiService {
 
         const config = useRuntimeConfig()
         const cookieOptions = {
-            sameSite: 'lax' as const,
+            sameSite: 'none' as const,
             secure: config.public.nodeEnv === 'production',
             path: '/',
             httpOnly: false
