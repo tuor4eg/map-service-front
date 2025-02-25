@@ -71,6 +71,10 @@ class ApiService {
         const headers = Object.assign({}, this.headers, options)
 
         const config = useRuntimeConfig()
+        console.log('Full runtime config:', config)
+        console.log('Public config:', config.public)
+        console.log('Environment value:', config.public.env)
+        
         const cookieOptions = {
             sameSite: 'lax' as const,
             secure: config.public.env === 'production',
@@ -84,7 +88,7 @@ class ApiService {
         console.log('Auth token:', authToken.value)
         console.log('Refresh token:', refreshToken.value)
         console.log('Is refreshing:', this.refreshing)
-        console.log('Environment:', config.public.env)
+        console.log('Cookie options:', cookieOptions)
 
         const token = this.refreshing
             ? refreshToken.value
