@@ -8,7 +8,7 @@
                 <pre>Access Token: {{ accessToken }}</pre>
                 <pre>Refresh Token: {{ refreshToken }}</pre>
                 <pre>Headers: {{ currentHeaders }}</pre>
-                <pre>v.0001</pre>
+                <pre>v.0002</pre>
             </v-card-text>
             <v-card-title>
                 <v-container>

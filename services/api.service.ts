@@ -73,11 +73,11 @@ class ApiService {
         const config = useRuntimeConfig()
         console.log('Full runtime config:', config)
         console.log('Public config:', config.public)
-        console.log('Environment value:', config.public.env)
+        console.log('Environment value:', config.public.nodeEnv)
         
         const cookieOptions = {
             sameSite: 'lax' as const,
-            secure: config.public.env === 'production',
+            secure: config.public.nodeEnv === 'production',
             path: '/',
             httpOnly: false
         }
@@ -176,7 +176,7 @@ class ApiService {
         const config = useRuntimeConfig()
         const cookieOptions = {
             sameSite: 'lax' as const,
-            secure: config.public.env === 'production',
+            secure: config.public.nodeEnv === 'production',
             path: '/',
             httpOnly: false
         }
