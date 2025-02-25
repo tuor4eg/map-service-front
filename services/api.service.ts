@@ -2,7 +2,6 @@
 
 import { v4 } from 'uuid'
 import { Mutex, type MutexInterface } from 'async-mutex'
-import { useI18n } from '#imports'
 import type { Ref } from 'vue'
 
 import { API_ENDPOINTS } from '~/constants/api.constant'
@@ -26,6 +25,13 @@ type TFetchRequest = {
     headers: Record<string, string>
     body?: any
     credentials: RequestCredentials
+}
+
+const cookieOptions = {
+    sameSite: 'none' as const,
+    secure: true,
+    path: '/',
+    httpOnly: false
 }
 
 class ApiService {
@@ -70,8 +76,8 @@ class ApiService {
     getHeaders(options: any): Record<string, string> {
         const headers = Object.assign({}, this.headers, options)
 
-        const authToken = useCookie(ACCESS_TOKEN, { sameSite: true })
-        const refreshToken = useCookie(REFRESH_TOKEN, { sameSite: true })
+        const authToken = useCookie(ACCESS_TOKEN, cookieOptions)
+        const refreshToken = useCookie(REFRESH_TOKEN, cookieOptions)
 
         const token = this.refreshing
             ? refreshToken.value
@@ -151,8 +157,8 @@ class ApiService {
     async logout(): Promise<void> {
         await this.post(API_ENDPOINTS.USER_LOGOUT, {})
 
-        const authToken = useCookie(ACCESS_TOKEN, { sameSite: true })
-        const refreshToken = useCookie(REFRESH_TOKEN, { sameSite: true })
+        const authToken = useCookie(ACCESS_TOKEN, cookieOptions)
+        const refreshToken = useCookie(REFRESH_TOKEN, cookieOptions)
 
         authToken.value = null
         refreshToken.value = null
