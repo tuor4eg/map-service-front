@@ -12,8 +12,8 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     const accessToken = useCookie('accessToken', cookieOptions)
     const refreshToken = useCookie('refreshToken', cookieOptions)
     
-    if ((!accessToken.value || !refreshToken.value) && to.path !== '/login') {
+    /*if ((!accessToken.value || !refreshToken.value) && to.path !== '/login') {
         return navigateTo('/login')
-    }
+    }*/
 })
 
