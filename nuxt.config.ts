@@ -20,9 +20,10 @@ export default defineNuxtConfig({
     runtimeConfig: {
         public: {
             apiBaseURL: process.env.NUXT_PUBLIC_API_BASE_URL,
+            env: process.env.NUXT_PUBLIC_NODE_ENV || 'development',
             yandexMaps: {
                 apikey: ''
-              }
+            }
         }
     },
     vite: {

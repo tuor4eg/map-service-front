@@ -70,12 +70,21 @@ class ApiService {
     getHeaders(options: any): Record<string, string> {
         const headers = Object.assign({}, this.headers, options)
 
-        const authToken = useCookie(ACCESS_TOKEN, { sameSite: 'lax' })
-        const refreshToken = useCookie(REFRESH_TOKEN, { sameSite: 'lax' })
+        const config = useRuntimeConfig()
+        const cookieOptions = {
+            sameSite: 'lax' as const,
+            secure: config.public.env === 'production',
+            path: '/',
+            httpOnly: false
+        }
+
+        const authToken = useCookie(ACCESS_TOKEN, cookieOptions)
+        const refreshToken = useCookie(REFRESH_TOKEN, cookieOptions)
 
         console.log('Auth token:', authToken.value)
         console.log('Refresh token:', refreshToken.value)
         console.log('Is refreshing:', this.refreshing)
+        console.log('Environment:', config.public.env)
 
         const token = this.refreshing
             ? refreshToken.value
@@ -160,8 +169,16 @@ class ApiService {
     async logout(): Promise<void> {
         await this.post(API_ENDPOINTS.USER_LOGOUT, {})
 
-        const authToken = useCookie(ACCESS_TOKEN, { sameSite: 'lax' })
-        const refreshToken = useCookie(REFRESH_TOKEN, { sameSite: 'lax' })
+        const config = useRuntimeConfig()
+        const cookieOptions = {
+            sameSite: 'lax' as const,
+            secure: config.public.env === 'production',
+            path: '/',
+            httpOnly: false
+        }
+
+        const authToken = useCookie(ACCESS_TOKEN, cookieOptions)
+        const refreshToken = useCookie(REFRESH_TOKEN, cookieOptions)
 
         authToken.value = null
         refreshToken.value = null
