@@ -69,39 +69,22 @@ class ApiService {
 
     getHeaders(options: any): Record<string, string> {
         const headers = Object.assign({}, this.headers, options)
+        return headers
+    }
 
+    private hasTokens(): boolean {
         const config = useRuntimeConfig()
-        console.log('Full runtime config:', config)
-        console.log('Public config:', config.public)
-        console.log('Environment value:', config.public.nodeEnv)
-        
         const cookieOptions = {
             sameSite: 'none' as const,
             secure: config.public.nodeEnv === 'production',
             path: '/',
-            httpOnly: false
+            httpOnly: true
         }
 
-        const authToken = useCookie(ACCESS_TOKEN, cookieOptions)
+        const accessToken = useCookie(ACCESS_TOKEN, cookieOptions)
         const refreshToken = useCookie(REFRESH_TOKEN, cookieOptions)
 
-        console.log('Auth token:', authToken.value)
-        console.log('Refresh token:', refreshToken.value)
-        console.log('Is refreshing:', this.refreshing)
-        console.log('Cookie options:', cookieOptions)
-
-        const token = this.refreshing
-            ? refreshToken.value
-            : authToken.value
-
-        console.log('Selected token:', token)
-
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`
-            console.log('Final headers:', headers)
-        }
-
-        return headers
+        return !!(accessToken.value && refreshToken.value)
     }
 
     generateDeviceUUID(): string {
@@ -119,6 +102,11 @@ class ApiService {
     }
 
     async fetch(endpoint: string, method: EMethods, body?: any, options = {}): Promise<any> {
+        if (!this.hasNoAuth(endpoint) && !this.hasTokens() && !this.refreshing) {
+            navigateTo('/login')
+            throw new Error('No tokens available')
+        }
+
         const request: TFetchRequest = {
             method,
             headers: this.getHeaders(options),
@@ -126,6 +114,7 @@ class ApiService {
         }
 
         const url = `${this.baseUrl}${endpoint}`
+        console.log('Request URL:', url)
 
         this.ensureDeviceUUID()
 
@@ -135,18 +124,15 @@ class ApiService {
 
         return this.mutex.runExclusive(async () => {
             try {
-                return await $fetch<any>(url, request)
+                const response = await $fetch<any>(url, request)
+                return response
             } catch (err) {
                 if (this.isAuthError(err) && !this.hasNoAuth(endpoint)) {
                     try {
                         this.enableRefreshMode()
-
                         await this.refresh()
-
                         this.disableRefreshMode()
-
                         request.headers = this.getHeaders(options)
-
                         return await $fetch<any>(url, request)
                     } catch (err) {
                         navigateTo('/login')
@@ -172,22 +158,7 @@ class ApiService {
 
     async logout(): Promise<void> {
         await this.post(API_ENDPOINTS.USER_LOGOUT, {})
-
-        const config = useRuntimeConfig()
-        const cookieOptions = {
-            sameSite: 'none' as const,
-            secure: config.public.nodeEnv === 'production',
-            path: '/',
-            httpOnly: false
-        }
-
-        const authToken = useCookie(ACCESS_TOKEN, cookieOptions)
-        const refreshToken = useCookie(REFRESH_TOKEN, cookieOptions)
-
-        authToken.value = null
-        refreshToken.value = null
         this.userStore.clearUser()
-
         navigateTo('/login')
     }
 

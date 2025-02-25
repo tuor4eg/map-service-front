@@ -5,10 +5,9 @@
     >
         <v-card width="400">
             <v-card-text v-if="debug" class="debug-info">
-                <pre>Access Token: {{ accessToken }}</pre>
-                <pre>Refresh Token: {{ refreshToken }}</pre>
-                <pre>Headers: {{ currentHeaders }}</pre>
-                <pre>v.0004</pre>
+                <pre>Environment: {{ runtimeConfig.public.nodeEnv }}</pre>
+                <pre>Cookie Options: {{ cookieOptions }}</pre>
+                <pre>v.0005</pre>
             </v-card-text>
             <v-card-title>
                 <v-container>
@@ -94,9 +93,6 @@ const login = async () => {
                 password: password.value
             })
 
-            console.log('Login response:', res)
-            console.log('Response cookies:', document.cookie)
-
             const store = useUserStore()
             store.setUser(res.user)
 
@@ -115,17 +111,8 @@ const cookieParams = {
     sameSite: 'none',
     secure: config.public.nodeEnv === 'production',
     path: '/',
-    httpOnly: false
+    httpOnly: true
 }
-const accessToken = computed(() => useCookie('accessToken', cookieParams).value)
-const refreshToken = computed(() => useCookie('refreshToken', cookieParams).value)
-const currentHeaders = computed(() => {
-    const headers = {}
-    if (accessToken.value) {
-        headers['Authorization'] = `Bearer ${accessToken.value}`
-    }
-    return headers
-})
 
 const cookieOptions = computed(() => cookieParams)
 const runtimeConfig = computed(() => config)
