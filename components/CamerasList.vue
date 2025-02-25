@@ -9,9 +9,20 @@
             variant="outlined"
             density="compact"
         />
-        <v-list class="pa-6">
+        
+        <!-- Индикатор загрузки -->
+        <div v-if="isLoading" class="d-flex justify-center align-center pa-6">
+            <v-progress-circular
+                indeterminate
+                color="primary"
+                :size="50"
+            ></v-progress-circular>
+            <span class="ml-3">Загрузка камер...</span>
+        </div>
+        
+        <v-list v-else class="pa-6">
             <v-list-item
-                v-for="camera in filteredCameras"
+                v-for="camera in paginatedCameras"
                 :key="camera._id"
                 :title="camera.title"
                 :subtitle="camera.address || camera.description"
@@ -35,12 +46,22 @@
                     </div>
                 </template>
             </v-list-item>
+            
+            <!-- Пагинация -->
+            <div class="d-flex justify-center mt-4">
+                <v-pagination
+                    v-model="currentPage"
+                    :length="totalPages"
+                    :total-visible="7"
+                    rounded
+                ></v-pagination>
+            </div>
         </v-list>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import type { TCamera } from '../types/types'
 import { useCamerasStore } from '~/stores/cameras.store'
 
@@ -52,16 +73,67 @@ interface CameraWithAddress extends TCamera {
     address?: string
 }
 
+const cameras = ref<TCamera[]>([])
 const camerasWithAddresses = ref<CameraWithAddress[]>([])
 const searchQuery = ref('')
+const isLoading = ref(true)
+const currentPage = ref(1)
+const itemsPerPage = 50
+const isLoadingAddresses = ref(false)
 
 onMounted(async () => {
-    camerasWithAddresses.value = await Promise.all(
-        camerasStore.cameras.map(async (camera) => {
-            const address = await geocodingService.getAddressFromCoords(camera.coordinates)
-            return { ...camera, address }
-        })
-    )
+    try {
+        isLoading.value = true
+        // Загружаем только базовые данные камер без адресов
+        cameras.value = [...camerasStore.cameras]
+        camerasWithAddresses.value = cameras.value.map(camera => ({ ...camera }))
+    } catch (error) {
+        console.error('Ошибка при загрузке камер:', error)
+    } finally {
+        isLoading.value = false
+        // Загружаем адреса для первой страницы
+        loadAddressesForCurrentPage()
+    }
+})
+
+// Загрузка адресов только для текущей страницы
+const loadAddressesForCurrentPage = async () => {
+    if (isLoadingAddresses.value) return
+    
+    try {
+        isLoadingAddresses.value = true
+        const currentPageCameras = paginatedCameras.value
+        
+        // Загружаем адреса только для камер на текущей странице, у которых еще нет адреса
+        await Promise.all(
+            currentPageCameras.map(async (camera, index) => {
+                // Если адрес уже загружен, пропускаем
+                if (camera.address) return
+                
+                const address = await geocodingService.getAddressFromCoords(camera.coordinates)
+                
+                // Обновляем адрес в массиве camerasWithAddresses
+                const cameraIndex = camerasWithAddresses.value.findIndex(c => c._id === camera._id)
+                if (cameraIndex !== -1) {
+                    camerasWithAddresses.value[cameraIndex] = { ...camerasWithAddresses.value[cameraIndex], address }
+                }
+            })
+        )
+    } catch (error) {
+        console.error('Ошибка при загрузке адресов:', error)
+    } finally {
+        isLoadingAddresses.value = false
+    }
+}
+
+// Сброс страницы при изменении поискового запроса
+watch(searchQuery, () => {
+    currentPage.value = 1
+})
+
+// Загружаем адреса при изменении страницы
+watch(currentPage, () => {
+    loadAddressesForCurrentPage()
 })
 
 const filteredCameras = computed(() => {
@@ -74,6 +146,16 @@ const filteredCameras = computed(() => {
         const descriptionMatch = camera.description?.toLowerCase().includes(query) || false
         return titleMatch || addressMatch || descriptionMatch
     })
+})
+
+const totalPages = computed(() => {
+    return Math.ceil(filteredCameras.value.length / itemsPerPage)
+})
+
+const paginatedCameras = computed(() => {
+    const startIndex = (currentPage.value - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return filteredCameras.value.slice(startIndex, endIndex)
 })
 
 const selectCamera = (camera: TCamera) => {

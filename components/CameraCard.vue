@@ -1,5 +1,5 @@
 <template>
-    <v-card width="500">
+    <v-card width="500" @click.stop class="camera-card">
         <template v-if="isLoading">
             <v-card-title class="d-flex align-center">
                 <v-skeleton-loader type="avatar" size="24" class="mr-2"></v-skeleton-loader>
@@ -229,7 +229,7 @@ const copyPassword = () => {
 const getContactIcon = (type: string): string => {
     switch (type.toLowerCase()) {
         case 'telegram':
-            return 'mdi-telegram'
+            return 'mdi-send'
         case 'phone':
             return 'mdi-phone'
         case 'email':
