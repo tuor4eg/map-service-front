@@ -27,13 +27,6 @@ type TFetchRequest = {
     credentials: RequestCredentials
 }
 
-const cookieOptions = {
-    sameSite: 'none' as const,
-    secure: true,
-    path: '/',
-    httpOnly: false
-}
-
 class ApiService {
     private baseUrl: string
     private headers: Record<string, string>
@@ -51,6 +44,17 @@ class ApiService {
         this.mutex = new Mutex()
         this.refreshing = false
         this.userStore = useUserStore()
+    }
+
+    getCookieOptions(): Record<string, any> {
+        const config = useRuntimeConfig()
+        return {
+            sameSite: 'none' as const,
+            secure: true,
+            path: '/',
+            httpOnly: false,
+            domain: config.public.domain
+        }
     }
 
     hasNoAuth(endpoint: string): boolean {
@@ -76,8 +80,8 @@ class ApiService {
     getHeaders(options: any): Record<string, string> {
         const headers = Object.assign({}, this.headers, options)
 
-        const authToken = useCookie(ACCESS_TOKEN, cookieOptions)
-        const refreshToken = useCookie(REFRESH_TOKEN, cookieOptions)
+        const authToken = useCookie(ACCESS_TOKEN, this.getCookieOptions())
+        const refreshToken = useCookie(REFRESH_TOKEN, this.getCookieOptions())
 
         const token = this.refreshing
             ? refreshToken.value
@@ -93,7 +97,7 @@ class ApiService {
     }
 
     ensureDeviceUUID(): void {
-        const deviceUUID = useCookie(DEVICE_UUID, { sameSite: true, maxAge: COOKIE_MAX_AGE })
+        const deviceUUID = useCookie(DEVICE_UUID, this.getCookieOptions())
 
         if (!deviceUUID.value) {
             const deviceUUIDValue = this.generateDeviceUUID()
@@ -157,8 +161,8 @@ class ApiService {
     async logout(): Promise<void> {
         await this.post(API_ENDPOINTS.USER_LOGOUT, {})
 
-        const authToken = useCookie(ACCESS_TOKEN, cookieOptions)
-        const refreshToken = useCookie(REFRESH_TOKEN, cookieOptions)
+        const authToken = useCookie(ACCESS_TOKEN, this.getCookieOptions())
+        const refreshToken = useCookie(REFRESH_TOKEN, this.getCookieOptions())
 
         authToken.value = null
         refreshToken.value = null

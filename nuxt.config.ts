@@ -21,6 +21,7 @@ export default defineNuxtConfig({
         public: {
             apiBaseURL: process.env.NUXT_PUBLIC_API_BASE_URL,
             nodeEnv: process.env.NUXT_PUBLIC_NODE_ENV,
+            domain: process.env.NUXT_PUBLIC_DOMAIN,
             yandexMaps: {
                 apikey: ''
             }
