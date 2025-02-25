@@ -2,7 +2,6 @@
 
 import { v4 } from 'uuid'
 import { Mutex, type MutexInterface } from 'async-mutex'
-import { useI18n } from '#imports'
 import type { Ref } from 'vue'
 
 import { API_ENDPOINTS } from '~/constants/api.constant'
@@ -26,6 +25,13 @@ type TFetchRequest = {
     headers: Record<string, string>
     body?: any
     credentials: RequestCredentials
+}
+
+const cookieOptions = {
+    sameSite: 'none' as const,
+    secure: true,
+    path: '/',
+    httpOnly: false
 }
 
 class ApiService {
@@ -69,22 +75,17 @@ class ApiService {
 
     getHeaders(options: any): Record<string, string> {
         const headers = Object.assign({}, this.headers, options)
-        return headers
-    }
 
-    private hasTokens(): boolean {
-        const config = useRuntimeConfig()
-        const cookieOptions = {
-            sameSite: 'none' as const,
-            secure: config.public.nodeEnv === 'production',
-            path: '/',
-            httpOnly: true
-        }
-
-        const accessToken = useCookie(ACCESS_TOKEN, cookieOptions)
+        const authToken = useCookie(ACCESS_TOKEN, cookieOptions)
         const refreshToken = useCookie(REFRESH_TOKEN, cookieOptions)
 
-        return !!(accessToken.value && refreshToken.value)
+        const token = this.refreshing
+            ? refreshToken.value
+            : authToken.value
+
+        headers['Authorization'] = `Bearer ${token}`
+
+        return headers
     }
 
     generateDeviceUUID(): string {
@@ -102,11 +103,6 @@ class ApiService {
     }
 
     async fetch(endpoint: string, method: EMethods, body?: any, options = {}): Promise<any> {
-        if (!this.hasNoAuth(endpoint) && !this.hasTokens() && !this.refreshing) {
-            navigateTo('/login')
-            throw new Error('No tokens available')
-        }
-
         const request: TFetchRequest = {
             method,
             headers: this.getHeaders(options),
@@ -114,7 +110,6 @@ class ApiService {
         }
 
         const url = `${this.baseUrl}${endpoint}`
-        console.log('Request URL:', url)
 
         this.ensureDeviceUUID()
 
@@ -124,15 +119,18 @@ class ApiService {
 
         return this.mutex.runExclusive(async () => {
             try {
-                const response = await $fetch<any>(url, request)
-                return response
+                return await $fetch<any>(url, request)
             } catch (err) {
                 if (this.isAuthError(err) && !this.hasNoAuth(endpoint)) {
                     try {
                         this.enableRefreshMode()
+
                         await this.refresh()
+
                         this.disableRefreshMode()
+
                         request.headers = this.getHeaders(options)
+
                         return await $fetch<any>(url, request)
                     } catch (err) {
                         navigateTo('/login')
@@ -158,7 +156,14 @@ class ApiService {
 
     async logout(): Promise<void> {
         await this.post(API_ENDPOINTS.USER_LOGOUT, {})
+
+        const authToken = useCookie(ACCESS_TOKEN, cookieOptions)
+        const refreshToken = useCookie(REFRESH_TOKEN, cookieOptions)
+
+        authToken.value = null
+        refreshToken.value = null
         this.userStore.clearUser()
+
         navigateTo('/login')
     }
 
