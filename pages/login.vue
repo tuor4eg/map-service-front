@@ -4,11 +4,6 @@
         style="height: 100vh"
     >
         <v-card width="400">
-            <v-card-text v-if="debug" class="debug-info">
-                <pre>Environment: {{ runtimeConfig.public.nodeEnv }}</pre>
-                <pre>Cookie Options: {{ cookieOptions }}</pre>
-                <pre>v.0005</pre>
-            </v-card-text>
             <v-card-title>
                 <v-container>
                     <v-row>
@@ -62,11 +57,7 @@ import { navigateTo } from '#app'
 
 const apiService = useNuxtApp().$apiService
 
-const { locale, t } = useI18n()
-
-const changeLocale = lang => {
-    locale.value = lang
-}
+const { t } = useI18n()
 
 const email = ref('')
 const password = ref('')
@@ -104,31 +95,10 @@ const login = async () => {
         toast.value.message = t('loginPage.loginError')
     }
 }
-
-const debug = ref(true)
-const config = useRuntimeConfig()
-const cookieParams = {
-    sameSite: 'none',
-    secure: config.public.nodeEnv === 'production',
-    path: '/',
-    httpOnly: true
-}
-
-const cookieOptions = computed(() => cookieParams)
-const runtimeConfig = computed(() => config)
 </script>
 
 <style scoped>
 v-container {
     background-color: #f5f5f5;
-}
-
-.debug-info {
-    background-color: #f5f5f5;
-    padding: 10px;
-    font-family: monospace;
-    font-size: 12px;
-    white-space: pre-wrap;
-    word-break: break-all;
 }
 </style>
