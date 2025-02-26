@@ -27,13 +27,6 @@ type TFetchRequest = {
     credentials: RequestCredentials
 }
 
-const cookieOptions = {
-    sameSite: 'none' as const,
-    secure: true,
-    path: '/',
-    httpOnly: false
-}
-
 class ApiService {
     private baseUrl: string
     private headers: Record<string, string>
