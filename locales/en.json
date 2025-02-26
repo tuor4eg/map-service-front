@@ -16,6 +16,7 @@
         "loginError": "Invalid email or password"
     },
     "common": {
+        "appTitle": "LA: Service for access to cameras",
         "copyToClipboard": "Copy",
         "copied": "Copied!"
     },

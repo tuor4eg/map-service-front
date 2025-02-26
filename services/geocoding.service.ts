@@ -23,7 +23,7 @@ export class GeocodingService {
             const data = await response.json()
             const features = data.response.GeoObjectCollection.featureMember
             
-            return features
+            const results = features
                 .filter((feature: any) => {
                     const kind = feature.GeoObject.metaDataProperty.GeocoderMetaData.kind
                     return ['house', 'locality'].includes(kind)
@@ -37,6 +37,8 @@ export class GeocodingService {
                         id: feature.GeoObject.metaDataProperty.GeocoderMetaData.Address.formatted
                     }
                 })
+            
+            return results
         } catch (error) {
             console.error('Geocoding error:', error)
             return []
@@ -46,7 +48,9 @@ export class GeocodingService {
     async getAddressFromCoords(coordinates: number[]): Promise<string> {
         try {
             const results = await this.geocode([...coordinates].reverse().join(','), 'ru')
-            return results[0]?.fullAddress || ''
+            const address = results[0]?.fullAddress || ''
+            
+            return address
         } catch (error) {
             console.error('Error getting address from coordinates:', error)
             return ''

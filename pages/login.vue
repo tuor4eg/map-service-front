@@ -57,11 +57,7 @@ import { navigateTo } from '#app'
 
 const apiService = useNuxtApp().$apiService
 
-const { locale, t } = useI18n()
-
-const changeLocale = lang => {
-    locale.value = lang
-}
+const { t } = useI18n()
 
 const email = ref('')
 const password = ref('')
@@ -89,12 +85,12 @@ const login = async () => {
             })
 
             const store = useUserStore()
-
             store.setUser(res.user)
 
             navigateTo('/')
         }
     } catch (e) {
+        console.error('Login error:', e)
         toast.value.show = true
         toast.value.message = t('loginPage.loginError')
     }

@@ -1,5 +1,5 @@
 <template>
-    <v-card width="500">
+    <v-card width="500" @click.stop class="camera-card">
         <template v-if="isLoading">
             <v-card-title class="d-flex align-center">
                 <v-skeleton-loader type="avatar" size="24" class="mr-2"></v-skeleton-loader>
@@ -25,7 +25,7 @@
             <v-card-text>
                 <div class="d-flex align-center mb-2">
                     <v-icon icon="mdi-map-marker" class="mr-2"></v-icon>
-                    <span>{{ props.address }}</span>
+                    <span>{{ address }}</span>
                 </div>
                 <div class="d-flex align-center mb-4">
                     <span class="mr-2">
@@ -130,6 +130,7 @@
 <script setup lang="ts">
 import type ApiService from '@/services/api.service'
 import type { TCamera } from '@/types/types'
+import type GeocodingService from '@/services/geocoding.service'
 
 const { t } = useI18n()
 
@@ -144,6 +145,7 @@ const cameraData = ref<TCamera>({
 })
 
 const apiService = useNuxtApp().$apiService as ApiService
+const geocodingService = useNuxtApp().$geocodingService as GeocodingService
 
 const props = defineProps({
     close: {
@@ -153,12 +155,10 @@ const props = defineProps({
     id: {
         type: String,
         required: true
-    },
-    address: {
-        type: String,
-        required: true
     }
 })
+
+const address = ref('')
 
 type TooltipTexts = {
     coordinates: string
@@ -188,6 +188,25 @@ onMounted(async () => {
         cameraData.value.url = camera.url
         cameraData.value.access = camera.access
         cameraData.value.ownerContact = camera.ownerContact
+        cameraData.value.address = camera.address
+
+        // Use address from camera data if available, otherwise fetch from coordinates
+        if (camera.address) {
+            address.value = camera.address
+        } else {
+            // Fetch address from coordinates
+            address.value = await geocodingService.getAddressFromCoords(camera.coordinates)
+            
+            // Если получили адрес из geocode, сохраняем его в базе данных
+            if (address.value) {
+                try {
+                    const updatedCamera = { ...camera, address: address.value }
+                    await apiService.updateCamera(updatedCamera)
+                } catch (error) {
+                    console.error(`Error updating camera ${camera.title}:`, error)
+                }
+            }
+        }
     } catch (error) {
         console.error('Error loading camera data:', error)
     } finally {
@@ -226,7 +245,7 @@ const copyPassword = () => {
 const getContactIcon = (type: string): string => {
     switch (type.toLowerCase()) {
         case 'telegram':
-            return 'mdi-telegram'
+            return 'mdi-send'
         case 'phone':
             return 'mdi-phone'
         case 'email':

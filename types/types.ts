@@ -11,6 +11,7 @@ export type TCamera = {
     coordinates: [number, number],
     url: string,
     _id: string,
+    address?: string,
     access?: {
         credentials: {
             login: string,
