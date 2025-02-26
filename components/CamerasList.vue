@@ -99,22 +99,17 @@ const loadAddressesForCurrentPage = async () => {
         isLoadingAddresses.value = true
         const currentPageCameras = paginatedCameras.value
         
-        // Загружаем адреса только для камер на текущей странице, у которых еще нет адреса
         await Promise.all(
             currentPageCameras
                 .filter(camera => !camera.address)
                 .map(async (camera) => {
-                    console.log('GEO!!!', camera)
-                    // Запрашиваем адрес через geocodingService
                     const address = await geocodingService.getAddressFromCoords(camera.coordinates)
                     
                     if (address) {
                         try {
-                            // Обновляем камеру с новым адресом
                             const updatedCamera = { ...camera, address }
                             await apiService.updateCamera(updatedCamera)
                             
-                            // Обновляем адрес в store
                             const cameraIndex = camerasStore.cameras.findIndex(c => c._id === camera._id)
                             if (cameraIndex !== -1) {
                                 camerasStore.cameras[cameraIndex] = updatedCamera
