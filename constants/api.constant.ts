@@ -7,5 +7,6 @@ export const API_ENDPOINTS = {
     CAMERA_LIST: '/camera/list',
     CAMERA_INFO: '/camera/',
     CAMERA_LIST_BY_USER: '/camera/user/',
-    STARRED_CAMERAS: '/camera/starred'
+    STARRED_CAMERAS: '/camera/starred',
+    CAMERA_UPDATE: '/camera/update'
 }

@@ -5,7 +5,7 @@ import { Mutex, type MutexInterface } from 'async-mutex'
 import type { Ref } from 'vue'
 
 import { API_ENDPOINTS } from '~/constants/api.constant'
-import type { TUser } from '~/types/types'
+import type { TCamera, TUser } from '~/types/types'
 import { useUserStore } from '~/stores/user.store'
 
 const ACCESS_TOKEN = 'accessToken'
@@ -200,6 +200,10 @@ class ApiService {
 
     async updateUser(data: TUser): Promise<any> {
             return await this.post(API_ENDPOINTS.USER_UPDATE, data)
+    }
+
+    async updateCamera(data: TCamera): Promise<any> {
+        return await this.post(API_ENDPOINTS.CAMERA_UPDATE, data)
     }
 
     async getStarredCameras(userId: string): Promise<any> {

@@ -64,17 +64,13 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import type { TCamera } from '../types/types'
 import { useCamerasStore } from '~/stores/cameras.store'
+import type ApiService from '@/services/api.service'
 
 const { t } = useI18n()
 const geocodingService = useNuxtApp().$geocodingService
+const apiService = useNuxtApp().$apiService as ApiService
 const camerasStore = useCamerasStore()
 
-interface CameraWithAddress extends TCamera {
-    address?: string
-}
-
-const cameras = ref<TCamera[]>([])
-const camerasWithAddresses = ref<CameraWithAddress[]>([])
 const searchQuery = ref('')
 const isLoading = ref(true)
 const currentPage = ref(1)
@@ -84,11 +80,10 @@ const isLoadingAddresses = ref(false)
 onMounted(async () => {
     try {
         isLoading.value = true
-        // Загружаем только базовые данные камер без адресов
-        cameras.value = [...camerasStore.cameras]
-        camerasWithAddresses.value = cameras.value.map(camera => ({ ...camera }))
+        // Камеры уже загружены в store, просто дожидаемся завершения загрузки
+        await camerasStore.loadCameras()
     } catch (error) {
-        console.error('Ошибка при загрузке камер:', error)
+        console.error('Error loading cameras:', error)
     } finally {
         isLoading.value = false
         // Загружаем адреса для первой страницы
@@ -106,21 +101,32 @@ const loadAddressesForCurrentPage = async () => {
         
         // Загружаем адреса только для камер на текущей странице, у которых еще нет адреса
         await Promise.all(
-            currentPageCameras.map(async (camera, index) => {
-                // Если адрес уже загружен, пропускаем
-                if (camera.address) return
-                
-                const address = await geocodingService.getAddressFromCoords(camera.coordinates)
-                
-                // Обновляем адрес в массиве camerasWithAddresses
-                const cameraIndex = camerasWithAddresses.value.findIndex(c => c._id === camera._id)
-                if (cameraIndex !== -1) {
-                    camerasWithAddresses.value[cameraIndex] = { ...camerasWithAddresses.value[cameraIndex], address }
-                }
-            })
+            currentPageCameras
+                .filter(camera => !camera.address)
+                .map(async (camera) => {
+                    console.log('GEO!!!', camera)
+                    // Запрашиваем адрес через geocodingService
+                    const address = await geocodingService.getAddressFromCoords(camera.coordinates)
+                    
+                    if (address) {
+                        try {
+                            // Обновляем камеру с новым адресом
+                            const updatedCamera = { ...camera, address }
+                            await apiService.updateCamera(updatedCamera)
+                            
+                            // Обновляем адрес в store
+                            const cameraIndex = camerasStore.cameras.findIndex(c => c._id === camera._id)
+                            if (cameraIndex !== -1) {
+                                camerasStore.cameras[cameraIndex] = updatedCamera
+                            }
+                        } catch (error) {
+                            console.error(`Error updating camera ${camera.title}:`, error)
+                        }
+                    }
+                })
         )
     } catch (error) {
-        console.error('Ошибка при загрузке адресов:', error)
+        console.error('Error loading addresses:', error)
     } finally {
         isLoadingAddresses.value = false
     }
@@ -138,9 +144,9 @@ watch(currentPage, () => {
 
 const filteredCameras = computed(() => {
     const query = searchQuery.value.toLowerCase()
-    if (!query) return camerasWithAddresses.value
+    if (!query) return camerasStore.cameras
     
-    return camerasWithAddresses.value.filter(camera => {
+    return camerasStore.cameras.filter(camera => {
         const titleMatch = camera.title.toLowerCase().includes(query)
         const addressMatch = camera.address?.toLowerCase().includes(query) || false
         const descriptionMatch = camera.description?.toLowerCase().includes(query) || false

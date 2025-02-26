@@ -188,9 +188,25 @@ onMounted(async () => {
         cameraData.value.url = camera.url
         cameraData.value.access = camera.access
         cameraData.value.ownerContact = camera.ownerContact
+        cameraData.value.address = camera.address
 
-        // Fetch address from coordinates
-        address.value = await geocodingService.getAddressFromCoords(camera.coordinates)
+        // Use address from camera data if available, otherwise fetch from coordinates
+        if (camera.address) {
+            address.value = camera.address
+        } else {
+            // Fetch address from coordinates
+            address.value = await geocodingService.getAddressFromCoords(camera.coordinates)
+            
+            // Если получили адрес из geocode, сохраняем его в базе данных
+            if (address.value) {
+                try {
+                    const updatedCamera = { ...camera, address: address.value }
+                    await apiService.updateCamera(updatedCamera)
+                } catch (error) {
+                    console.error(`Error updating camera ${camera.title}:`, error)
+                }
+            }
+        }
     } catch (error) {
         console.error('Error loading camera data:', error)
     } finally {

@@ -1,75 +1,86 @@
-# Nuxt Minimal Starter
+# Map Service Frontend
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+A modern web application for viewing and managing camera feeds on a map interface. Built with Nuxt.js and Vue.js.
 
-## Setup
+## Features
 
-Make sure to install dependencies:
+- Interactive Yandex Maps integration
+- Camera management and monitoring
+- User authentication and authorization
+- Responsive UI with Vuetify
+- Multi-language support (i18n)
+- Starred cameras functionality
+
+## Tech Stack
+
+- **Framework**: Nuxt.js 3
+- **UI Library**: Vuetify 3
+- **State Management**: Pinia
+- **Maps**: Yandex Maps API
+- **Styling**: SASS
+- **Containerization**: Docker
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (latest LTS version)
+- npm or yarn
+- Docker and Docker Compose (for containerized deployment)
+
+### Installation
 
 ```bash
-# npm
+# Install dependencies
 npm install
 
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your configuration
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+### Development
 
 ```bash
-# npm
+# Start development server
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+The application will be available at `http://localhost:3000`.
 
-Build the application for production:
+### Production
 
 ```bash
-# npm
+# Build for production
 npm run build
 
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+# Start production server
+npm run start
 ```
 
-Locally preview production build:
+### Docker Deployment
 
 ```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
+# Build and start containers
+docker-compose up -d
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+## Project Structure
+
+- `/components` - Reusable Vue components
+- `/pages` - Application pages and routes
+- `/services` - API and external service integrations
+- `/stores` - Pinia state management
+- `/composables` - Reusable Vue composition functions
+- `/middleware` - Nuxt middleware for authentication, etc.
+- `/locales` - Internationalization files
+- `/styles` - Global SASS styles
+
+## Environment Variables
+
+Key environment variables:
+
+- `NUXT_PUBLIC_API_BASE_URL` - Backend API URL
+- `NUXT_PUBLIC_YANDEX_MAPS_APIKEY` - Yandex Maps API key
+
+See `.env.example` for all available options.
