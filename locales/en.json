@@ -50,11 +50,18 @@
                 "new": "New Password",
                 "confirm": "Confirm New Password"
             },
+            "accounts": {
+                "title": "Accounts",
+                "telegram": "Telegram ID",
+                "phone": "Phone Number"
+            },
             "rules": {
                 "required": "This field is required",
                 "passwordLength": "Password must be at least 8 characters long",
                 "passwordComplexity": "Password must contain uppercase and lowercase letters, and numbers",
-                "passwordMatch": "Passwords must match"
+                "passwordMatch": "Passwords must match",
+                "telegramFormat": "Invalid format",
+                "phoneFormat": "Invalid phone number"
             },
             "saveButton": "Save Settings",
             "saveSuccess": "Settings saved successfully",

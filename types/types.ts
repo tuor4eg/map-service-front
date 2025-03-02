@@ -2,7 +2,7 @@ export type TUser = {
     name: string
     email: string
     role: string
-    id: string
+    _id: string
   }
   
 export type TCamera = {

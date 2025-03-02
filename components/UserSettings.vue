@@ -11,6 +11,33 @@
 
             <v-list-item>
                 <v-card class="pa-4 mt-4">
+                    <v-card-title>{{ t('userMenu.userSettings.accounts.title') }}</v-card-title>
+                    <v-card-text>
+                        <v-form ref="accountFormRef" v-model="accountForm.valid">
+                            <v-text-field
+                                v-model="accountForm.telegramId"
+                                :label="t('userMenu.userSettings.accounts.telegram')"
+                                prepend-inner-icon="mdi-send"
+                                variant="outlined"
+                                density="comfortable"
+                                :rules="[rules.telegramFormat]"
+                            ></v-text-field>
+                            <v-text-field
+                                v-model="accountForm.phone"
+                                :label="t('userMenu.userSettings.accounts.phone')"
+                                prepend-inner-icon="mdi-phone"
+                                variant="outlined"
+                                density="comfortable"
+                                type="tel"
+                                :rules="[rules.phoneFormat]"
+                            ></v-text-field>
+                        </v-form>
+                    </v-card-text>
+                </v-card>
+            </v-list-item>
+
+            <v-list-item>
+                <v-card class="pa-4 mt-4">
                     <v-card-title>{{ t('userMenu.userSettings.password.title') }}</v-card-title>
                     <v-card-text>
                         <v-form 
@@ -68,6 +95,12 @@ const settings = ref({
     language: locale.value
 })
 
+const accountForm = ref({
+    telegramId: '',
+    phone: '',
+    valid: true
+})
+
 const availableLanguages = useNuxtApp().$i18n.availableLocales.map(locale => ({
     title: t(`userMenu.userSettings.language.options.${locale}`),
     value: locale
@@ -91,6 +124,17 @@ const rules = {
     passwordMatch: (value) => {
         if (!passwordForm.value.newPassword) return true
         return value === passwordForm.value.newPassword || t('userMenu.userSettings.rules.passwordMatch')
+    },
+    telegramFormat: (value) => {
+        if (!value) return true
+        const telegramRegex = /^\d+$/
+        return telegramRegex.test(value) || t('userMenu.userSettings.rules.telegramFormat')
+    },
+    phoneFormat: (value) => {
+        if (!value) return true
+
+        const phoneRegex = /^\+\d+$/
+        return phoneRegex.test(value) || t('userMenu.userSettings.rules.phoneFormat')
     }
 }
 
@@ -107,6 +151,8 @@ const showPassword = ref({
     confirm: false
 })
 
+const accountFormRef = ref(null)
+
 const resetPasswordForm = () => {
     passwordForm.value.newPassword = ''
     passwordForm.value.confirmPassword = ''
@@ -115,9 +161,22 @@ const resetPasswordForm = () => {
 
 const saveSettings = async () => {
     try {
+        if (!accountForm.value.valid) {
+            snackbar.value = {
+                show: true,
+                text: t('userMenu.userSettings.saveError'),
+                color: 'error'
+            }
+            return
+        }
+
         const data = {
             settings: {
-                language: settings.value.language
+                language: settings.value.language,
+            },
+            accounts: {
+                telegramId: accountForm.value.telegramId,
+                phone: accountForm.value.phone
             }
         }
 
@@ -149,7 +208,11 @@ const saveSettings = async () => {
 
 onMounted(async () => {
     try {
-
+        const user = await apiService.userInfo()
+        if (user.accounts) {
+            accountForm.value.telegramId = user.accounts.telegramId || ''
+            accountForm.value.phone = user.accounts.phone || ''
+        }
     } catch (error) {
         console.error('Error loading settings:', error)
     }
