@@ -194,20 +194,12 @@ class ApiService {
         return await this.get(`${API_ENDPOINTS.CAMERA_INFO}${id}`)
     }
 
-    async сamerasByUser(userId: string): Promise<any> {
-        return await this.get(`${API_ENDPOINTS.CAMERA_LIST_BY_USER}${userId}`)
-    }
-
     async updateUser(data: TUser): Promise<any> {
             return await this.post(API_ENDPOINTS.USER_UPDATE, data)
     }
 
     async updateCamera(data: TCamera): Promise<any> {
         return await this.post(API_ENDPOINTS.CAMERA_UPDATE, data)
-    }
-
-    async getStarredCameras(userId: string): Promise<any> {
-        return await this.get(`${API_ENDPOINTS.STARRED_CAMERAS}${userId }`)
     }
 }
 
