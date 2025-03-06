@@ -97,7 +97,7 @@
                 <template v-for="[coords, cameras] in groupedCameras" :key="coords">
                     <yandex-map-marker
                         :settings="{ 
-                            coordinates: coords.split(',').map(Number).reverse() as LngLat
+                            coordinates: coords.split(',').map(Number) as LngLat
                         }"
                     >
                         <div class="cluster">
@@ -223,7 +223,7 @@ onMounted(async (): Promise<void> => {
 
 const copyCoordinates = async (coordinates: number[]): Promise<void> => {
     try {
-        const coordsForClipboard = [...coordinates].reverse().join(', ')
+        const coordsForClipboard = [...coordinates].join(', ')
         await navigator.clipboard.writeText(coordsForClipboard)
         showCopyTooltip.value = true
         setTimeout(() => {

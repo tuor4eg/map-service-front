@@ -47,7 +47,7 @@ export class GeocodingService {
 
     async getAddressFromCoords(coordinates: number[]): Promise<string> {
         try {
-            const results = await this.geocode([...coordinates].reverse().join(','), 'ru')
+            const results = await this.geocode([...coordinates].join(','), 'ru')
             const address = results[0]?.fullAddress || ''
             
             return address
