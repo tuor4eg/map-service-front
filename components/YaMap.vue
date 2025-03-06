@@ -41,7 +41,7 @@
             :settings="{
                 location: {
                     center: centerCoords as LngLat,
-                    zoom: 15,
+                    zoom: 12,
                 }
             }"
             :options="{
@@ -167,7 +167,7 @@ const popup = ref<null | string>(null)
 const hoveredMarker = ref<string | null>(null)
 const selectedLocation = ref<SearchResult | null>(null)
 
-const centerCoords = ref([37.573856, 55.751574])
+const centerCoords = ref([39.8845, 57.6261])
 
 const camerasStore = useCamerasStore()
 
@@ -307,10 +307,6 @@ const handleCameraClick = async (cameraId: string) => {
     popup.value = cameraId
     const cameras = groupedCameras.value.get(hoveredMarker.value || '')
     const camera = cameras?.find((c: TCamera) => c._id === cameraId)
-}
-
-const getAddressFromCoords = async (coordinates: number[]): Promise<string> => {
-    return await geocodingService.getAddressFromCoords(coordinates)
 }
 
 defineExpose({

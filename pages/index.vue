@@ -24,8 +24,7 @@ const mapRef = ref()
 
 const handleCameraSelect = (camera: TCamera) => {
     if (camera.coordinates) {
-        const [longitude, latitude] = camera.coordinates
-        mapRef.value?.centerMap([latitude, longitude])
+        mapRef.value?.centerMap(camera.coordinates)
         mapRef.value?.showCamera(camera._id)
     }
 }
